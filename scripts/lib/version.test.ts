@@ -11,6 +11,14 @@ const ROOT = join(import.meta.dirname, "..", "..");
 const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version as string;
 const page = readFileSync(join(ROOT, "docs/index.html"), "utf8");
 
+describe("the changelog", () => {
+  it("starts with the package version", () => {
+    const changelog = readFileSync(join(ROOT, "CHANGELOG.md"), "utf8");
+    expect(/^## (\d+\.\d+\.\d+) /m.exec(changelog)?.[1]).toBe(version);
+    expect(JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).files).toContain("CHANGELOG.md");
+  });
+});
+
 describe("the website's release version", () => {
   it("is the package version in the hero badge and the footer note", () => {
     expect(/data-size="sm">v(\d+\.\d+\.\d+)<\/span>/.exec(page)?.[1]).toBe(version);

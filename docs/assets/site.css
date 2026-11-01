@@ -177,6 +177,14 @@
   .dm-bench-code .mk-code-block code > span { white-space: pre-wrap; overflow-wrap: anywhere; }
   .dm-bench-code .mk-code-block pre[data-numbers] code > span { padding-inline-start: 3rem; text-indent: -3rem; }
   @media (max-width: 60rem) { .dm-bench { grid-template-columns: minmax(0, 1fr); } }
+  /* section eyebrows as badges; the recorded benchmark and the coverage rings */
+  .dm-eyebrow { align-self: flex-start; gap: .375rem; }
+  .mk-features-head .dm-eyebrow, .mk-features .dm-eyebrow { align-self: center; }
+  .dm-subtitle { margin: 2.5rem 0 1rem; font-size: 1.125rem; font-weight: 600; }
+  .dm-bench-recorded + .dm-figcaption, .dm-coverage + .dm-figcaption { margin-block-start: .75rem; }
+  .dm-tab-version { color: var(--muted-foreground); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .dm-bench-table .dm-group th { font-weight: 600; background: var(--muted); }
+  .dm-coverage { margin-block-start: .5rem; }
 
   /* install: one leaf-cornered panel on a faint dot pattern */
   .dm-use {

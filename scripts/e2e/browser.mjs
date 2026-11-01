@@ -433,6 +433,31 @@ try {
   check('integrations: a route param from the URL renders as text, never as markup', await frame.locator('main h2 b').count() === 0);
 
   // benchmark: one full run with HTML strings through the page, one quick run with VNodes through the frame's API
+  // the recorded run (make bench) and the coverage rings (make coverage), written into the page
+  const recorded = await page.evaluate(() => [...document.querySelectorAll('.dm-bench-recorded [role=tabpanel]')].map((panel) => ({
+    id: panel.id,
+    rows: [...panel.querySelectorAll('tr[data-op]')].map((tr) => [tr.dataset.op, ...[...tr.querySelectorAll('td')].map((td) => td.textContent)]),
+  })));
+  const NO_DIFF_RECORDED = ['replace', 'swap', 'remove', 'clear'];
+  check('docs: the recorded run has a table per browser with a time in every cell, n/a where diff mode cannot express it',
+    recorded.map((p) => p.id).join() === 'bench-panel-chromium,bench-panel-webkit' && recorded.every((p) => p.rows.length === 20
+      && p.rows.every(([op, ...cells]) => cells.length === 4 && cells.every((c, i) => (i === 3 && NO_DIFF_RECORDED.includes(op) ? c === 'n/a' : /^\d+(\.\d)?$/.test(c))))),
+    JSON.stringify(recorded.map((p) => [p.id, p.rows.length])));
+  await page.locator('#bench-tab-webkit').scrollIntoViewIfNeeded();
+  await page.click('#bench-tab-webkit');
+  check('docs: the WebKit tab shows its recorded table', await page.isVisible('#bench-panel-webkit') && !(await page.isVisible('#bench-panel-chromium')));
+  const rings = await page.$$eval('.dm-coverage .radial-progress', (els) => els.map((el) => Number(el.getAttribute('aria-valuenow'))));
+  const testRuns = Number((await page.textContent('[data-fact=tests]')).replace(/,/g, ''));
+  check('docs: the coverage rings show four percentages and the number of test runs', rings.length === 4 && rings.every((v) => v >= 60 && v <= 100) && testRuns > 1000,
+    `${rings.join()} runs=${testRuns}`);
+  const eyebrows = await page.evaluate(() => ({
+    headers: document.querySelectorAll('.mk-section-header-copy, .mk-features-head').length,
+    badges: document.querySelectorAll('.mk-section-header-copy > .badge.dm-eyebrow > svg use, .mk-features-head > .badge.dm-eyebrow > svg use').length,
+    missingIcons: [...document.querySelectorAll('use[href^="#"]')].map((u) => u.getAttribute('href')).filter((href) => !document.querySelector(href)),
+  }));
+  check('docs: every section header starts with a badge with an icon, and every icon exists',
+    eyebrows.headers > 5 && eyebrows.badges === eyebrows.headers && eyebrows.missingIcons.length === 0, JSON.stringify(eyebrows));
+
   await page.locator('#bench').scrollIntoViewIfNeeded();
   await page.click('[data-ref=bench-run]');
   await page.waitForFunction(() => /^(Done|Stopped)/.test(document.querySelector('[data-ref=bench-status]').value), null, { timeout: 180000 });

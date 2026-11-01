@@ -42,8 +42,9 @@ test: ## Unit + browser tests: happy-dom and real Chromium (Vitest projects)
 test-watch: ## Tests in watch mode
 	bun run test:watch
 
-coverage: ## Tests with merged v8 coverage (prints the `All files` table)
+coverage: ## Tests with merged v8 coverage (prints the `All files` table) → the website's coverage rings
 	bun run coverage
+	bun scripts/coverage-page.ts
 
 # e2e consumes the publishable artifact like a user: the packed tarball in a clean
 # project (Node ESM + CJS, server-side DOM), then the website and every example page
@@ -94,7 +95,7 @@ log: ## Last 40 lines of the dev server log (stdout, stderr)
 metrics: ## Print the measured artifact sizes (dist/stats.json)
 	@cat dist/stats.json
 
-bench: build ## The website's benchmark in headless Chromium → table + output/bench.json
+bench: build ## The website's benchmark in headless Chromium and WebKit → tables, output/bench.json, the website's recorded run
 	node scripts/bench.mjs
 
 purge-cdn: ## Purge the jsDelivr @latest cache for the CDN assets (after npm publish)

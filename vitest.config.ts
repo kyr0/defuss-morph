@@ -21,6 +21,8 @@ export default defineConfig({
       // by global.browser.test.ts loading the real artifact); test-recorder.ts:
       // test-only helper (VERIFIED: never shipped, package.json files lists dist only)
       exclude: ["**/*.test.*", "src/test-recorder.ts", "src/types.ts", "src/all.ts"],
+      // the defaults, plus json-summary for the website's coverage rings (scripts/coverage-page.ts)
+      reporter: ["text", "html", "clover", "json", "json-summary"],
     },
     projects: [
       {

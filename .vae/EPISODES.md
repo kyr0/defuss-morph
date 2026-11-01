@@ -84,3 +84,12 @@ Wrap: EVERY lead becomes a test | .vae/VERIFY.py rule | one MEMORY line with BC,
 2026-11-01T19:53:43Z s=97c0601e FINDING src/morph.ts:patchByPosition (keyed variant) learn=none: a single benchmark run is not evidence for a gap; ARCH.md already records up to 28% run-to-run variance
 2026-11-01T20:00:02Z s=97c0601e DONE fp=7efb5786a17a cov=97.7% paths=.claude-plugin/marketplace.json,.claude-plugin/plugin.json,.codex-plugin/plugin.json,AGENTS.md(+73)
 2026-11-01T20:00:02Z s=97c0601e FINDING docs/index.html:hero badge + footer note learn=test: scripts/lib/version.test.ts failed (0.2.0 vs 0.3.0) before the fix; AGENTS.md names it with the release steps
+2026-11-01T20:09:13Z s=97c0601e FAIL tests.e2e.1
+2026-11-01T20:15:09Z s=97c0601e DONE fp=0c7488fe312b cov=97.7% paths=.claude-plugin/marketplace.json,.claude-plugin/plugin.json,.codex-plugin/plugin.json,AGENTS.md(+78)
+2026-11-01T20:15:09Z s=97c0601e FINDING scripts/lib/bench-page.ts:formatMs/cell learn=test: bench-page.test.ts 'keeps one decimal in a fine-timer table even for whole medians, and none in WebKit's'
+2026-11-01T20:15:09Z s=97c0601e FINDING scripts/lib/bench-page.ts:coverageBlock learn=test: bench-page.test.ts expects 97 for 97.74
+2026-11-01T20:15:09Z s=97c0601e FINDING scripts/e2e/browser.mjs (gate run during make bench) learn=none: the check itself guards an empty or partial block
+2026-11-01T20:15:09Z s=97c0601e FINDING scripts/coverage-page.ts + Makefile coverage learn=none: observed: 'unchanged docs/index.html' on the repeat run
+2026-11-01T20:15:09Z s=97c0601e FINDING scripts/bench.mjs learn=test: bench-page.test.ts: benchBlock throws on a wrong result; make bench ran with both browsers (exit 0)
+2026-11-01T20:15:09Z s=97c0601e FINDING docs/index.html eyebrows learn=test: browser.mjs checks every section header starts with a badge with an icon and every <use href> resolves
+2026-11-01T20:15:09Z s=97c0601e FINDING CHANGELOG.md learn=test: version.test.ts: top entry equals package.json version, files contains CHANGELOG.md
