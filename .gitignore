@@ -1,0 +1,13 @@
+!dist/
+.env
+var/*
+tmp/*
+output/*
+input/*
+.DS_Store
+.vae/SWARM_STATUS.yaml
+node_modules/
+coverage/
+.cache/
+__pycache__/
+.vitest/

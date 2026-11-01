@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>defuss-morph · re-render with plain HTML and keep the live DOM</title>
+  <meta name="description" content="defuss-morph morphs an HTML string or JSX into the existing DOM with native APIs: keyed nodes move instead of being recreated, so focus, typed input and event listeners survive. Zero dependencies, no virtual DOM, no build step. Live playground.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c8cff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='18' cy='18' r='3'/%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Cpath d='M13 6h3a2 2 0 0 1 2 2v7M11 18H8a2 2 0 0 1-2-2V9'/%3E%3C/svg%3E">
+  <script>
+    // Before paint, before df$ exists (defuss-shadcn Dark Mode guide): the saved choice, else the OS default.
+    let saved = '';
+    try {
+      const raw = JSON.parse(localStorage.getItem('defuss-shadcn-theme'));
+      saved = raw && raw.format === 'defuss-store' ? raw.value : raw;
+    } catch {}
+    if (saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+    }
+  </script>
+  <!-- defuss-shadcn from jsDelivr at an exact release, pinned by Subresource Integrity. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/defuss-shadcn@0.9.11/dist/components/core.min.css" integrity="sha384-qUQCm/MM2DNkdT3uEdx8Mpocj+GwXlgLat0FnWv657c16tHWOouZFT2nV7kg5pBE" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/defuss-shadcn@0.9.11/dist/theme/utils/shapes.min.css" integrity="sha384-afvtGYqFGzjo38FCOZzKDSW80xXPxJ2stLo6Frem9v0u+krFuFSgSymjNrkFFO5B" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/defuss-shadcn@0.9.11/dist/components/all.min.css" integrity="sha384-D6ChEYfIRnfJpWB03vSS4b4b1ZdHsnCNUwg2VBFrBkjDVHIVvdVDXaJ1M2hFAdK2" crossorigin="anonymous">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<svg class="sr-only" aria-hidden="true">
+  <symbol id="i-logo" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7M11 18H8a2 2 0 0 1-2-2V9"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-17.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></symbol>
+  <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14m7-7-7 7-7-7"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M7 7h10v10M7 17 17 7"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><path d="m18 14 4 4-4 4M18 2l4 4-4 4M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7M9 7v10"/></symbol>
+  <symbol id="i-pointer" viewBox="0 0 24 24"><path d="M22 14a8 8 0 0 1-8 8M18 11v-1a2 2 0 0 0-2-2 2 2 0 0 0-2 2M14 10V9a2 2 0 0 0-2-2 2 2 0 0 0-2 2v1M10 9.5V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></symbol>
+  <symbol id="i-patch" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/></symbol>
+  <symbol id="i-feather" viewBox="0 0 24 24"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z"/><path d="M16 8 2 22M17.5 15H9"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 3 20 12 6 21Z"/></symbol>
+  <symbol id="i-reload" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6m8 14h8"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2m16 0h2m-7-1v2m-6-2v2"/></symbol>
+  <symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12m0 0 8.7-5M12 12 3.3 7"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M10 12.5 8 15l2 2.5m4-5 2 2.5-2 2.5M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></symbol>
+  <symbol id="i-linkedin" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+</svg>
+
+<div id="top" class="dm-page">
+  <header class="mk-header" data-variant="floating">
+    <div class="mk-header-inner">
+      <a href="#top" class="mk-header-brand"><svg class="dm-icon dm-brand-icon" aria-hidden="true"><use href="#i-logo"/></svg><span class="mk-header-name">defuss-morph</span></a>
+      <nav class="mk-header-nav" aria-label="Main">
+        <ul class="nav-menu-list">
+          <li class="nav-menu-item"><a class="nav-menu-link" href="#demo">Demo</a></li>
+          <li class="nav-menu-item"><a class="nav-menu-link" href="#how">How it works</a></li>
+          <li class="nav-menu-item"><a class="nav-menu-link" href="#api">API</a></li>
+          <li class="nav-menu-item"><a class="nav-menu-link" href="#install">Install</a></li>
+        </ul>
+      </nav>
+      <div class="mk-header-actions">
+        <label class="swap" data-variant="rotate" data-size="sm">
+          <input type="checkbox" id="theme-toggle" aria-label="Dark mode">
+          <span class="swap-on"><svg class="dm-icon" aria-hidden="true"><use href="#i-moon"/></svg></span>
+          <span class="swap-off"><svg class="dm-icon" aria-hidden="true"><use href="#i-sun"/></svg></span>
+        </label>
+        <a class="btn mk-header-wide" data-variant="ghost" data-size="icon" href="https://github.com/kyr0/defuss-morph" aria-label="defuss-morph on GitHub"><svg class="dm-icon" aria-hidden="true"><use href="#i-github"/></svg></a>
+        <a class="btn mk-header-wide" data-size="sm" href="#install">Install</a>
+        <button type="button" class="btn mk-header-menu" data-variant="ghost" data-size="icon" data-sheet-trigger="dm-menu" aria-haspopup="dialog" aria-label="Open menu"><svg class="dm-icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
+      </div>
+    </div>
+    <dialog id="dm-menu" class="sheet" data-side="right" role="dialog" aria-modal="true" aria-labelledby="dm-menu-title">
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <h2 class="sheet-title" id="dm-menu-title">defuss-morph</h2>
+        </div>
+        <div class="sheet-body">
+          <p class="mk-header-sheet-label">This page</p>
+          <ul class="mk-header-sheet-nav">
+            <li><a href="#demo" data-sheet-close>Demo <small>Morph against innerHTML, live</small></a></li>
+            <li><a href="#how" data-sheet-close>How it works</a></li>
+            <li><a href="#api" data-sheet-close>API</a></li>
+            <li><a href="#install" data-sheet-close>Install</a></li>
+          </ul>
+        </div>
+        <div class="sheet-footer mk-header-sheet-actions">
+          <a class="btn" data-variant="outline" href="https://github.com/kyr0/defuss-morph"><svg class="dm-icon" aria-hidden="true"><use href="#i-github"/></svg>GitHub</a>
+        </div>
+      </div>
+    </dialog>
+  </header>
+
+  <main class="dm-main">
+
+  <section class="parallax" aria-label="Introduction" style="padding-block:clamp(4rem, 10vw, 7rem) 1rem">
+    <div class="parallax-layer" data-depth="far" aria-hidden="true">
+      <div class="pattern-grid" style="width:100%;height:100%;--shape-ink:color-mix(in oklch, var(--foreground) 7%, transparent);--shape-pattern:32px;mask-image:radial-gradient(55% 60% at 50% 45%, #000, transparent 75%)"></div>
+    </div>
+    <div class="parallax-layer" data-depth="mid" aria-hidden="true" style="--parallax-speed:22%;mask-image:linear-gradient(#000 55%, transparent 92%)">
+      <div class="corner-blob" style="position:absolute;inset-block-start:10%;inset-inline-start:8%;width:min(22rem, 45%);aspect-ratio:1;background:color-mix(in oklch, var(--chart-1) 45%, transparent);filter:blur(60px);opacity:.55"></div>
+      <div class="corner-blob-3" style="position:absolute;inset-block-start:28%;inset-inline-end:6%;width:min(18rem, 40%);aspect-ratio:1;background:color-mix(in oklch, var(--chart-3) 40%, transparent);filter:blur(60px);opacity:.5"></div>
+    </div>
+    <div class="parallax-content">
+      <section class="mk-hero" style="width:100%">
+        <div class="mk-hero-copy">
+          <a class="mk-hero-pill" href="#numbers"><span class="badge" data-variant="default" data-size="sm">v0.2.0</span>Zero dependencies · <span data-stat="all.min.js:gzip">6.9 kB</span> gzip · any framework or none <svg class="dm-icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <h1 class="mk-hero-title">Re-render with <strong>plain HTML</strong> or JSX, and the page</h1>
+          <p class="dm-flip"><span class="text-rotate"><span>
+              <span class="dm-accent">keeps focus and selection</span>
+              <span class="dm-accent">keeps what users typed</span>
+              <span class="dm-accent">moves keyed nodes instead of rebuilding them</span>
+              <span class="dm-accent">changes only what differs</span>
+              <span class="dm-accent">takes partial change-sets</span>
+          </span></span></p>
+          <p class="mk-hero-desc"><code>defuss-morph</code> compares new markup with the <strong>live DOM</strong> and patches the difference with native DOM calls. A node that exists before and after stays the same node, so focus, the text in an input and its event listeners survive the update. It needs <strong>no virtual DOM and no build step</strong>, works next to any framework, and runs on the server against happy-dom as well as in the browser.</p>
+          <div class="mk-hero-actions">
+            <a class="btn" data-size="lg" href="#demo">Try the playground<svg class="dm-icon" aria-hidden="true"><use href="#i-arrow-down"/></svg></a>
+            <a class="btn" data-variant="outline" data-size="lg" href="#api">Read the API</a>
+          </div>
+          <p class="mk-hero-note">Built by <a href="https://www.linkedin.com/in/aronhomberg/" target="_blank" rel="noopener">Aron Homberg (kyr0)<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a>, open source (<a href="https://github.com/kyr0/defuss-morph/blob/main/LICENSE" target="_blank" rel="noopener">MIT<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a>)</p>
+        </div>
+      </section>
+      <div class="dm-intro" id="intro">
+        <section class="dm-intro-item" aria-labelledby="intro-1">
+          <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-move"/></svg></span>
+          <h3 id="intro-1">Move, never rebuild</h3>
+          <p>Children are matched by <code>key</code>, then by <code>id</code>, then by tag. A matched node is <strong>moved</strong> with <code>insertBefore</code> and patched in place, so its identity, focus and scroll position survive.</p>
+        </section>
+        <section class="dm-intro-item" aria-labelledby="intro-2">
+          <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-cursor"/></svg></span>
+          <h3 id="intro-2">Typed input stays</h3>
+          <p>An input keeps its live <code>value</code> and <code>checked</code> state unless the new markup sets them. A textarea that has focus keeps its content while you type.</p>
+        </section>
+        <section class="dm-intro-item" aria-labelledby="intro-3">
+          <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-pointer"/></svg></span>
+          <h3 id="intro-3">Native event behaviour</h3>
+          <p>JSX handlers such as <code>onClick</code> listen on the element itself, so order, <code>stopPropagation()</code> and non-bubbling events behave natively. Removing an element <strong>tears its handlers down</strong>.</p>
+        </section>
+        <section class="dm-intro-item" aria-labelledby="intro-4">
+          <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-patch"/></svg></span>
+          <h3 id="intro-4">Partial change-sets</h3>
+          <p>With <code>{ diff: true }</code> you send only the items that changed, addressed by <code>key</code> or <code>id</code>. Diff mode never removes or moves anything, which suits streamed and AI-generated updates.</p>
+        </section>
+        <section class="dm-intro-item" aria-labelledby="intro-5">
+          <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-globe"/></svg></span>
+          <h3 id="intro-5">Browser and server</h3>
+          <p>HTML is parsed by the <code>DOMParser</code> of the target element's own document, so the same call works in a browser, in happy-dom and across windows. The library entry has <strong>no side effects</strong>.</p>
+        </section>
+        <section class="dm-intro-item" aria-labelledby="intro-6">
+          <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-feather"/></svg></span>
+          <h3 id="intro-6">One file, no build step</h3>
+          <p>One <code>&lt;script type="module"&gt;</code> tag loads <strong><span data-stat="all.min.js:gzip">6.9 kB</span> gzip</strong> and exposes the API as <code>window.df$</code>. Bundlers get side-effect-free ESM and CommonJS builds with type declarations.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section id="demo" class="container dm-section parallax-reveal" data-reveal="zoom" aria-labelledby="demo-title">
+    <header class="mk-section-header" data-align="center">
+      <div class="mk-section-header-copy">
+        <span class="mk-section-header-eyebrow">Live demo</span>
+        <h2 class="mk-section-header-title" id="demo-title">Morph against innerHTML, on the same markup</h2>
+        <p class="mk-section-header-desc">Type into the inputs on the stage, tick a box, leave the cursor in a field, then apply the next state. A MutationObserver counts what each engine did to the DOM. <code>morph()</code> runs the copy of the built library this site serves; <code>innerHTML</code> is the baseline that rebuilds everything.</p>
+      </div>
+    </header>
+    <div class="dm-play card">
+      <div class="dm-play-config tabs">
+        <div class="tab-list" role="tablist" aria-label="Scenario" id="scenarios">
+          <button class="tab-trigger" role="tab" aria-selected="true" aria-controls="scenario-panel" id="sc-list" data-scenario="list">Keyed list</button>
+          <button class="tab-trigger" role="tab" aria-selected="false" aria-controls="scenario-panel" id="sc-form" data-scenario="form" tabindex="-1">Form state</button>
+          <button class="tab-trigger" role="tab" aria-selected="false" aria-controls="scenario-panel" id="sc-diff" data-scenario="diff" tabindex="-1">Change-set</button>
+          <button class="tab-trigger" role="tab" aria-selected="false" aria-controls="scenario-panel" id="sc-transition" data-scenario="transition" tabindex="-1">Transition</button>
+        </div>
+        <div class="tab-content dm-scenario" role="tabpanel" id="scenario-panel" aria-labelledby="sc-list" tabindex="0">
+          <p class="dm-scenario-desc" id="scenario-desc" aria-live="polite"></p>
+          <div class="dm-row">
+            <span class="dm-label" id="engine-label">Engine</span>
+            <div class="toggle-group" role="group" aria-labelledby="engine-label" data-type="single" data-variant="outline" data-size="sm" id="engines">
+              <button type="button" class="toggle" aria-pressed="true" data-engine="morph">morph()</button>
+              <button type="button" class="toggle" aria-pressed="false" data-engine="innerHTML">innerHTML</button>
+            </div>
+            <label class="dm-row" id="transition-field" hidden><span class="dm-label">Type</span>
+              <select class="select" data-size="sm" id="transition-type">
+                <option>fade</option><option>slide-left</option><option>slide-right</option><option>shake</option>
+              </select>
+            </label>
+          </div>
+          <label class="label" for="next-html">Next state <span class="label-hint">(edit it before applying)</span></label>
+          <div class="dm-code">
+            <div class="dm-editor" id="next-editor">
+              <pre class="dm-editor-paint" aria-hidden="true"><code id="next-paint"></code></pre>
+              <textarea class="dm-editor-src" id="next-html" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+            </div>
+            <pre class="dm-call"><code id="call"></code></pre>
+          </div>
+          <div class="dm-row">
+            <button type="button" class="btn" id="apply"><svg class="dm-icon" aria-hidden="true"><use href="#i-play"/></svg>Apply next state</button>
+            <button type="button" class="btn" data-variant="ghost" id="reset"><svg class="dm-icon" aria-hidden="true"><use href="#i-reload"/></svg>Reset</button>
+          </div>
+        </div>
+      </div>
+      <div class="dm-play-run">
+        <div class="dm-stage-wrap">
+          <span class="dm-stage-label">Stage</span>
+          <div class="dm-stage" id="stage"></div>
+        </div>
+        <dl class="dm-stats" id="stats" aria-live="polite">
+          <div><dt>Elements kept</dt><dd id="st-kept">0</dd></div>
+          <div><dt>Created</dt><dd id="st-created">0</dd></div>
+          <div><dt>Removed</dt><dd id="st-removed">0</dd></div>
+          <div><dt>Attribute writes</dt><dd id="st-attrs">0</dd></div>
+          <div><dt>Text writes</dt><dd id="st-text">0</dd></div>
+        </dl>
+        <p class="dm-verdict" id="verdict">Apply a state to see what changed.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="container dm-section parallax-reveal" aria-labelledby="how-title">
+    <section class="mk-features" style="width:100%">
+      <div class="mk-features-head">
+        <span class="mk-features-eyebrow">How it works</span>
+        <h2 class="mk-features-title" id="how-title">One pass over the children, matching before creating</h2>
+        <p class="mk-features-desc">Both inputs end up as the same structure: an HTML string is parsed into a detached document and read back as plain objects; JSX already is one. The morph then walks the target's children once. Every new child first looks for a node it can take over; only a child without one is created, and whatever is left unclaimed at the end is removed.</p>
+      </div>
+      <figure class="diagram dm-flow" id="flow" data-type="flow" data-steps data-autoplay="400" aria-label="The path of one morph through the engine">
+        <div class="diagram-canvas" style="--cols:5">
+          <div class="diagram-node" data-node="in" data-shape="pill" style="--col:1;--row:1"><span class="diagram-node-name">morph(el, html or JSX)</span></div>
+          <div class="diagram-node" data-node="parse" style="--col:2;--row:1"><span class="diagram-node-eyebrow">Strings only</span><span class="diagram-node-name">Parse</span><span class="diagram-node-meta">DOMParser of el.ownerDocument</span></div>
+          <div class="diagram-node" data-node="normalize" style="--col:3;--row:1"><span class="diagram-node-eyebrow">Children</span><span class="diagram-node-name">Normalize</span><span class="diagram-node-meta">flatten fragments, join text</span></div>
+          <div class="diagram-node" data-node="match" data-shape="diamond" style="--col:4;--row:1"><span class="diagram-node-name">Match found?</span></div>
+          <div class="diagram-node" data-node="create" data-tone="warn" style="--col:5;--row:1"><span class="diagram-node-name">Create</span><span class="diagram-node-meta">insert, run onMount</span></div>
+          <div class="diagram-node" data-node="move" data-tone="accent" style="--col:4;--row:2"><span class="diagram-node-eyebrow">Same node</span><span class="diagram-node-name">Move into place</span><span class="diagram-node-meta">insertBefore keeps identity</span></div>
+          <div class="diagram-node" data-node="patch" style="--col:3;--row:2"><span class="diagram-node-eyebrow">In place</span><span class="diagram-node-name">Patch attributes</span><span class="diagram-node-meta">form state and handlers kept</span></div>
+          <div class="diagram-node" data-node="recurse" style="--col:2;--row:2"><span class="diagram-node-name">Recurse into children</span></div>
+          <div class="diagram-node" data-node="cleanup" data-tone="warn" style="--col:2;--row:3"><span class="diagram-node-eyebrow">Leftovers</span><span class="diagram-node-name">Remove unclaimed</span><span class="diagram-node-meta">handlers torn down first</span></div>
+          <div class="diagram-node" data-node="done" data-shape="pill" data-tone="ok" style="--col:1;--row:3"><span class="diagram-node-name">DOM matches the input</span></div>
+        </div>
+        <ol class="diagram-edges">
+          <li class="diagram-edge" data-from="in" data-to="parse"></li>
+          <li class="diagram-edge" data-from="parse" data-to="normalize"></li>
+          <li class="diagram-edge" data-from="normalize" data-to="match"></li>
+          <li class="diagram-edge" data-from="match" data-to="create">no</li>
+          <li class="diagram-edge" data-from="match" data-to="move" data-tone="accent">key, id or tag</li>
+          <li class="diagram-edge" data-from="move" data-to="patch"></li>
+          <li class="diagram-edge" data-from="patch" data-to="recurse"></li>
+          <li class="diagram-edge" data-from="recurse" data-to="cleanup"></li>
+          <li class="diagram-edge" data-from="cleanup" data-to="done"></li>
+        </ol>
+      </figure>
+    </section>
+
+    <div class="dm-how-grid">
+      <div>
+        <h3 class="dm-subtitle">What survives a morph</h3>
+        <ul class="dm-keeps">
+          <li class="dm-keep"><h4>Node identity</h4><p>A matched node is the same object afterwards. References you hold, <code>WeakMap</code> entries and third-party widgets attached to it stay valid.</p></li>
+          <li class="dm-keep"><h4>Focus and selection</h4><p>Moving a node with <code>insertBefore</code> keeps it in the document, so a focused input stays focused and keeps its caret.</p></li>
+          <li class="dm-keep"><h4>Uncontrolled form state</h4><p>Markup without <code>value</code> or <code>checked</code> leaves the live state alone. Markup that declares them, or a VNode with <code>checked: false</code>, sets it.</p></li>
+          <li class="dm-keep"><h4>Event listeners</h4><p>Listeners you added with <code>addEventListener</code> stay on surviving nodes. An HTML string cannot declare handlers, so registered JSX handlers stay too.</p></li>
+          <li class="dm-keep"><h4>Comments</h4><p>HTML comments are matched and patched like text, so <code>morph(el, el.innerHTML)</code> changes no node.</p></li>
+          <li class="dm-keep"><h4>Lifecycle hooks</h4><p><code>onMount</code> runs after insertion; <code>onUnmount</code> runs once when the element leaves the document, with the handler of the latest render.</p></li>
+        </ul>
+      </div>
+      <div class="dm-rules">
+        <h3 class="dm-subtitle">Ordering rules</h3>
+        <ol class="mk-process-steps">
+          <li class="mk-process-step">
+            <span class="mk-process-step-number" aria-hidden="true">01</span>
+            <div class="mk-process-step-body">
+              <h4 class="mk-process-step-title">Full state by default</h4>
+              <p class="mk-process-step-desc">A plain <code>morph()</code> describes all children: whatever the input does not mention is removed.</p>
+            </div>
+          </li>
+          <li class="mk-process-step">
+            <span class="mk-process-step-number" aria-hidden="true">02</span>
+            <div class="mk-process-step-body">
+              <h4 class="mk-process-step-title">Nested morphs queue</h4>
+              <p class="mk-process-step-desc">A morph started from inside another morph on the same element or a descendant waits; the latest request runs when the outer morph returns.</p>
+            </div>
+          </li>
+          <li class="mk-process-step" aria-current="step">
+            <span class="mk-process-step-number" aria-hidden="true">03</span>
+            <div class="mk-process-step-body">
+              <h4 class="mk-process-step-title">The latest content wins</h4>
+              <p class="mk-process-step-desc">A morph issued while a transition runs applies at once and also replaces the content that transition will apply, so it never ends on stale markup.</p>
+            </div>
+          </li>
+          <li class="mk-process-step">
+            <span class="mk-process-step-number" aria-hidden="true">04</span>
+            <div class="mk-process-step-body">
+              <h4 class="mk-process-step-title">Shadow roots are targets</h4>
+              <p class="mk-process-step-desc">An element with an open shadow root is morphed inside it. Custom elements (tag names with a hyphen) keep their light DOM as the target, for slotted content.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="api" class="container dm-section parallax-reveal" aria-labelledby="api-title">
+    <header class="mk-section-header">
+      <div class="mk-section-header-copy">
+        <span class="mk-section-header-eyebrow">API</span>
+        <h2 class="mk-section-header-title" id="api-title">One function for most pages, primitives for frameworks</h2>
+        <p class="mk-section-header-desc">Most code needs only <code>morph()</code>. The declarations ship as <code>dist/index.d.ts</code>; the source of truth is <a href="https://github.com/kyr0/defuss-morph/blob/main/src/index.ts">src/index.ts</a>.</p>
+      </div>
+    </header>
+
+    <div class="tabs dm-api">
+      <div class="tab-list" role="tablist" aria-label="API reference" data-size="lg">
+        <button class="tab-trigger" role="tab" aria-selected="true" aria-controls="api-morph" id="tab-morph">morph()</button>
+        <button class="tab-trigger" role="tab" aria-selected="false" aria-controls="api-diff" id="tab-diff" tabindex="-1">Diff mode</button>
+        <button class="tab-trigger" role="tab" aria-selected="false" aria-controls="api-low" id="tab-low" tabindex="-1">Primitives</button>
+        <button class="tab-trigger" role="tab" aria-selected="false" aria-controls="api-limits" id="tab-limits" tabindex="-1">Limits</button>
+      </div>
+
+      <div class="tab-content" role="tabpanel" id="api-morph" aria-labelledby="tab-morph" tabindex="0">
+        <p class="dm-api-lead"><code>morph(el, newContent, options?)</code> makes the children of <code>el</code> match <code>newContent</code>: an HTML string, a VNode, an array of VNodes or plain text. It returns <code>undefined</code> and finishes synchronously, unless a transition is requested; then it returns a Promise that resolves when the transition has finished.</p>
+        <div class="table-container">
+          <table class="table dm-table">
+            <thead><tr class="table-row"><th class="table-head">Option</th><th class="table-head">Type</th><th class="table-head">Default</th><th class="table-head">Meaning</th></tr></thead>
+            <tbody>
+              <tr class="table-row"><td class="table-cell"><code>diff</code></td><td class="table-cell"><code>boolean</code></td><td class="table-cell"><code>false</code></td><td class="table-cell">Apply a partial change-set instead of the full child list (see Diff mode).</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>transition.type</code></td><td class="table-cell"><code>'fade' | 'slide-left' | 'slide-right' | 'shake' | 'none'</code></td><td class="table-cell"><code>'fade'</code></td><td class="table-cell"><code>fade</code> cross-fades a snapshot of the old content; the others animate out, morph, then animate in. <code>none</code> keeps the call synchronous.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>transition.duration</code></td><td class="table-cell"><code>number</code> (ms)</td><td class="table-cell"><code>300</code></td><td class="table-cell">Length of each animation phase.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>transition.easing</code></td><td class="table-cell"><code>string</code></td><td class="table-cell"><code>'ease-in-out'</code></td><td class="table-cell">Any CSS timing function.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>transition.delay</code></td><td class="table-cell"><code>number</code> (ms)</td><td class="table-cell"><code>0</code></td><td class="table-cell">Wait before the transition starts.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>transition.target</code></td><td class="table-cell"><code>'parent' | 'self'</code></td><td class="table-cell"><code>'parent'</code></td><td class="table-cell">Which element is animated. With <code>'parent'</code>, an element that has no parent is morphed without animation.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>transition.styles</code></td><td class="table-cell"><code>{ enter, enterActive, exit, exitActive }</code></td><td class="table-cell">by type</td><td class="table-cell">Your own CSS property maps for the four phases (not used by <code>fade</code>).</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figure class="mk-code-block" data-variant="file">
+          <div class="mk-code-block-head">
+            <div class="mk-code-block-tabs" role="radiogroup" aria-label="Input">
+              <label><input type="radio" name="cb-api" value="html" checked>HTML string</label><label><input type="radio" name="cb-api" value="jsx">JSX / VNodes</label>
+            </div>
+            <button class="mk-code-block-copy" type="button" aria-label="Copy code"><svg class="dm-icon" aria-hidden="true"><use href="#i-copy"/></svg></button>
+          </div>
+          <pre data-tab="html" data-lang="ts" data-numbers><code><span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> { morph } </span><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">'defuss-morph'</span><span style="color:#E6EDF3">;</span></span><span></span><span><span style="color:#FF7B72">const</span><span style="color:#E6EDF3"> </span><span style="color:#79C0FF">list</span><span style="color:#E6EDF3"> </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> document.</span><span style="color:#D2A8FF">getElementById</span><span style="color:#E6EDF3">(</span><span style="color:#A5D6FF">'todo'</span><span style="color:#E6EDF3">);</span></span><span><span style="color:#D2A8FF">morph</span><span style="color:#E6EDF3">(list, </span><span style="color:#A5D6FF">`&lt;li key="a"&gt;Alpha&lt;/li&gt;&lt;li key="b"&gt;Beta&lt;/li&gt;`</span><span style="color:#E6EDF3">);</span></span><span></span><span><span style="color:#8B949E">// b moves in front of a; neither node is recreated</span></span><span data-highlight><span style="color:#D2A8FF">morph</span><span style="color:#E6EDF3">(list, </span><span style="color:#A5D6FF">`&lt;li key="b"&gt;Beta&lt;/li&gt;&lt;li key="a"&gt;Alpha, edited&lt;/li&gt;`</span><span style="color:#E6EDF3">);</span></span><span></span><span><span style="color:#FF7B72">await</span><span style="color:#E6EDF3"> </span><span style="color:#D2A8FF">morph</span><span style="color:#E6EDF3">(list, </span><span style="color:#A5D6FF">'&lt;li&gt;Done&lt;/li&gt;'</span><span style="color:#E6EDF3">, { transition: { type: </span><span style="color:#A5D6FF">'fade'</span><span style="color:#E6EDF3">, duration: </span><span style="color:#79C0FF">200</span><span style="color:#E6EDF3"> } });</span></span></code></pre>
+          <pre data-tab="jsx" data-lang="ts" data-numbers><code><span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> { morph } </span><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">'defuss-morph'</span><span style="color:#E6EDF3">;</span></span><span></span><span><span style="color:#8B949E">// any JSX factory that returns { type, attributes, children } works,</span></span><span><span style="color:#8B949E">// e.g. defuss; this is the same tree written out by hand</span></span><span><span style="color:#D2A8FF">morph</span><span style="color:#E6EDF3">(document.</span><span style="color:#D2A8FF">getElementById</span><span style="color:#E6EDF3">(</span><span style="color:#A5D6FF">'app'</span><span style="color:#E6EDF3">), {</span></span><span><span style="color:#E6EDF3">  type: </span><span style="color:#A5D6FF">'button'</span><span style="color:#E6EDF3">,</span></span><span data-highlight><span style="color:#E6EDF3">  attributes: { key: </span><span style="color:#A5D6FF">'save'</span><span style="color:#E6EDF3">, </span><span style="color:#D2A8FF">onClick</span><span style="color:#E6EDF3">: () </span><span style="color:#FF7B72">=&gt;</span><span style="color:#E6EDF3"> </span><span style="color:#D2A8FF">save</span><span style="color:#E6EDF3">(), disabled: </span><span style="color:#79C0FF">false</span><span style="color:#E6EDF3"> },</span></span><span><span style="color:#E6EDF3">  children: [</span><span style="color:#A5D6FF">'Save'</span><span style="color:#E6EDF3">],</span></span><span><span style="color:#E6EDF3">});</span></span></code></pre>
+          <span class="mk-code-block-status" role="status"></span>
+        </figure>
+      </div>
+
+      <div class="tab-content" role="tabpanel" id="api-diff" aria-labelledby="tab-diff" tabindex="0" hidden>
+        <p class="dm-api-lead">With <code>{ diff: true }</code> the input is a change-set for the direct children of <code>el</code>. Each item names its node by <code>key</code> (preferred) or <code>id</code>. A matched node gets the declared attributes merged in, and its children replaced only if the item declares children. An unmatched item is appended. Nothing else is touched.</p>
+        <div class="table-container">
+          <table class="table dm-table">
+            <thead><tr class="table-row"><th class="table-head">Item</th><th class="table-head">Effect</th></tr></thead>
+            <tbody>
+              <tr class="table-row"><td class="table-cell">Matches an existing child</td><td class="table-cell">Patched in place: declared attributes set, undeclared ones and registered handlers kept. A different tag replaces the node.</td></tr>
+              <tr class="table-row"><td class="table-cell">Matches nothing</td><td class="table-cell">Appended at the end. It needs a tag, because it has to be created.</td></tr>
+              <tr class="table-row"><td class="table-cell">No <code>key</code> or <code>id</code>, or plain text</td><td class="table-cell">Throws an <code>Error</code>: there is no unambiguous node to address.</td></tr>
+              <tr class="table-row"><td class="table-cell">Top-level comment, whitespace</td><td class="table-cell">Skipped. Comments inside items are morphed.</td></tr>
+              <tr class="table-row"><td class="table-cell">Child not mentioned</td><td class="table-cell">Untouched: identity, order, attributes and listeners stay. Use a full <code>morph()</code> to delete.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figure class="mk-code-block" data-variant="file">
+          <div class="mk-code-block-head"><span class="mk-code-block-file"><svg class="dm-icon" aria-hidden="true"><use href="#i-file"/></svg>stream.ts</span><button class="mk-code-block-copy" type="button" aria-label="Copy code"><svg class="dm-icon" aria-hidden="true"><use href="#i-copy"/></svg></button></div>
+          <pre data-lang="ts" data-numbers><code><span><span style="color:#8B949E">// rows a, b and c exist; send only what changed</span></span><span><span style="color:#D2A8FF">morph</span><span style="color:#E6EDF3">(rows, </span><span style="color:#A5D6FF">`&lt;tr key="b" class="done"&gt;&lt;td&gt;b finished&lt;/td&gt;&lt;/tr&gt;`</span><span style="color:#E6EDF3">, { diff: </span><span style="color:#79C0FF">true</span><span style="color:#E6EDF3"> });</span></span><span></span><span><span style="color:#8B949E">// a VNode item without a tag borrows it from the node it addresses</span></span><span data-highlight><span style="color:#D2A8FF">morph</span><span style="color:#E6EDF3">(form, [{ attributes: { id: </span><span style="color:#A5D6FF">'terms'</span><span style="color:#E6EDF3">, checked: </span><span style="color:#79C0FF">false</span><span style="color:#E6EDF3"> } }], { diff: </span><span style="color:#79C0FF">true</span><span style="color:#E6EDF3"> });</span></span></code></pre>
+          <span class="mk-code-block-status" role="status"></span>
+        </figure>
+      </div>
+
+      <div class="tab-content" role="tabpanel" id="api-low" aria-labelledby="tab-low" tabindex="0" hidden>
+        <p class="dm-api-lead">The building blocks <code>morph()</code> is made of are exported for framework integration; defuss-query is built on them. Every <code>globals</code> argument is optional and derived from the element's own document.</p>
+        <div class="table-container">
+          <table class="table dm-table">
+            <thead><tr class="table-row"><th class="table-head">Export</th><th class="table-head">What it does</th></tr></thead>
+            <tbody>
+              <tr class="table-row"><td class="table-cell"><code>updateDomWithVdom(el, vnodes, globals?, mode?)</code></td><td class="table-cell">The guarded morph entry point for VNodes. <code>mode</code> is <code>'replace'</code> (default) or <code>'diff'</code>. Nested calls queue as described above.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>replaceDomWithVdom(el, vnodes, globals?)</code></td><td class="table-cell">Removes every child, with the same handler teardown as a morph, and renders the input from scratch.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>htmlStringToVNodes(html, DOMParser)</code></td><td class="table-cell">Parses markup into VNodes. Fragments get an explicit <code>&lt;body&gt;</code> so a leading comment is kept; full documents parse unchanged.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>domNodeToVNode(node)</code></td><td class="table-cell">Reads a DOM node back as a VNode, marked as coming from the DOM so its handlers are preserved.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>getRenderer(document)</code></td><td class="table-cell">Creates DOM from VNodes: elements, SVG namespaces, text and comment nodes, attributes, refs and lifecycle hooks.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>registerDelegatedEvent(el, type, handler, options?)</code></td><td class="table-cell">Adds a handler as JSX does: one slot per event and phase, or with <code>{ multi: true }</code> one native listener per handler.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>removeDelegatedEvent</code>, <code>clearDelegatedEventsDeep</code></td><td class="table-cell">Remove one type, or every handler of a subtree.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>onClearDelegatedEvents(hook)</code></td><td class="table-cell">Runs <code>hook(element)</code> whenever morph removes or replaces an element, so a library with its own listeners can release them. Returns an unregister function.</td></tr>
+              <tr class="table-row"><td class="table-cell"><code>performTransition(el, update, config)</code></td><td class="table-cell">The transition runner behind the <code>transition</code> option.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-content" role="tabpanel" id="api-limits" aria-labelledby="tab-limits" tabindex="0" hidden>
+        <p class="dm-api-lead">Three rules follow from treating markup that does not mention something as "leave it alone".</p>
+        <div class="accordion" style="max-width:56rem">
+          <details class="accordion-item" open>
+            <summary class="accordion-trigger"><span>HTML cannot uncheck a box</span><svg class="accordion-chevron dm-icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="accordion-content">
+              <p>Markup without <code>checked</code> means "not controlled", so a box the user ticked stays ticked. The same holds for an input's <code>value</code>. To set the state explicitly, send a VNode: in diff mode, <code>morph(el, [{ attributes: { id: 'terms', checked: false } }], { diff: true })</code>.</p>
+            </div>
+          </details>
+          <details class="accordion-item">
+            <summary class="accordion-trigger"><span>Inline on-attributes are not removed</span><svg class="accordion-chevron dm-icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="accordion-content">
+              <p>Attributes whose name starts with <code>on</code>, such as <code>onclick="…"</code>, are never removed by a later morph. Attach behaviour with <code>addEventListener</code> or JSX handlers instead of inline attributes.</p>
+            </div>
+          </details>
+          <details class="accordion-item">
+            <summary class="accordion-trigger"><span>Diff mode cannot delete</span><svg class="accordion-chevron dm-icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="accordion-content">
+              <p>A change-set only patches and appends. Removing a node, or reordering, needs a full <code>morph()</code> of the parent.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="numbers" class="container dm-section parallax-reveal" aria-labelledby="numbers-title">
+    <section class="mk-stats" style="width:100%">
+      <div class="mk-stats-layout">
+        <div class="mk-stats-copy">
+          <div class="mk-stats-head">
+            <h2 class="mk-stats-title" id="numbers-title">Small, and measured</h2>
+            <p class="mk-stats-desc">The sizes below are written into this page by <code>make build</code> from the files it just built (<code>dist/stats.json</code>), and the build fails while this page shows other numbers.</p>
+          </div>
+          <div class="mk-stats-grid">
+            <div class="mk-stat"><span class="mk-stat-value"><span data-stat="all.min.js:gzip">6.9 kB</span> <span class="badge" data-variant="secondary" data-size="sm">gzip</span></span><span class="mk-stat-label"><code>all.min.js</code>, the one-file CDN build (<span data-stat="all.min.js:bytes">18.7 kB</span> raw)</span></div>
+            <div class="mk-stat"><span class="mk-stat-value">0</span><span class="mk-stat-label">runtime or peer dependencies</span></div>
+            <div class="mk-stat"><span class="mk-stat-value">2</span><span class="mk-stat-label">test environments: every test file runs in real Chromium, and all but the browser-only ones also in happy-dom</span><a href="https://github.com/kyr0/defuss-morph/blob/main/vitest.config.ts" class="btn mk-stat-link" data-variant="link" data-size="default">The test setup</a></div>
+            <div class="mk-stat"><span class="mk-stat-value">4</span><span class="mk-stat-label">builds: ESM and CommonJS for bundlers and Node, readable and minified bundles for the CDN</span></div>
+          </div>
+        </div>
+        <figure class="mk-stats-media dm-metrics">
+          <div class="mockup-code" data-chrome="mac" data-title="defuss-morph · dist/">
+            <pre data-prefix="$"><code>make build</code></pre>
+            <pre data-prefix=""><code>index.mjs   <span data-stat="index.mjs:bytes">39.0 kB</span>  <span data-stat="index.mjs:gzip">9.6 kB</span> gzip</code></pre>
+            <pre data-prefix=""><code>index.cjs   <span data-stat="index.cjs:bytes">40.1 kB</span>  <span data-stat="index.cjs:gzip">9.7 kB</span> gzip</code></pre>
+            <pre data-prefix=""><code>all.js      <span data-stat="all.js:bytes">40.5 kB</span>  <span data-stat="all.js:gzip">9.9 kB</span> gzip</code></pre>
+            <pre data-prefix="" data-tone="success"><code>all.min.js  <span data-stat="all.min.js:bytes">18.7 kB</span>  <span data-stat="all.min.js:gzip">6.9 kB</span> gzip</code></pre>
+          </div>
+          <figcaption class="dm-figcaption">gzip at Node's default level; kB here means 1,024 bytes.</figcaption>
+        </figure>
+      </div>
+    </section>
+  </section>
+
+  <section id="install" class="container dm-section parallax-reveal" aria-labelledby="install-title">
+    <div class="corner-leaf pattern-dots dm-use">
+    <header class="mk-section-header">
+      <div class="mk-section-header-copy">
+        <span class="mk-section-header-eyebrow">Install</span>
+        <h2 class="mk-section-header-title" id="install-title">Add it to your page or your app</h2>
+        <p class="mk-section-header-desc">Load one file from the CDN, install the package, or copy the built file into your assets. Then morph, or hand one prompt to your coding agent.</p>
+      </div>
+    </header>
+    <div class="dm-ways">
+      <div class="dm-way">
+        <h3 class="dm-way-title"><svg class="dm-icon" aria-hidden="true"><use href="#i-globe"/></svg>From the CDN</h3>
+        <p class="dm-way-desc">The bundle registers the API as <code>window.df$</code>, or you import it as a module. An existing <code>df$</code>, for example from defuss-query, is extended rather than replaced.</p>
+        <figure class="mk-code-block">
+          <div class="mk-code-block-head">
+            <div class="mk-code-block-tabs" role="radiogroup" aria-label="Loading">
+              <label><input type="radio" name="cb-cdn" value="global" checked>df$ global</label><label><input type="radio" name="cb-cdn" value="esm">ES module</label>
+            </div>
+            <button class="mk-code-block-copy" type="button" aria-label="Copy code"><svg class="dm-icon" aria-hidden="true"><use href="#i-copy"/></svg></button>
+          </div>
+          <pre data-tab="global" data-lang="html"><code><span><span style="color:#E6EDF3">&lt;</span><span style="color:#7EE787">script</span><span style="color:#E6EDF3"> </span><span style="color:#79C0FF">type</span><span style="color:#E6EDF3">=</span><span style="color:#A5D6FF">"module"</span><span style="color:#E6EDF3"> </span><span style="color:#79C0FF">src</span><span style="color:#E6EDF3">=</span><span style="color:#A5D6FF">"https://cdn.jsdelivr.net/npm/defuss-morph@latest/dist/all.min.js"</span><span style="color:#E6EDF3">&gt;&lt;/</span><span style="color:#7EE787">script</span><span style="color:#E6EDF3">&gt;</span></span><span><span style="color:#E6EDF3">&lt;</span><span style="color:#7EE787">script</span><span style="color:#E6EDF3"> </span><span style="color:#79C0FF">type</span><span style="color:#E6EDF3">=</span><span style="color:#A5D6FF">"module"</span><span style="color:#E6EDF3">&gt;</span></span><span><span style="color:#E6EDF3">  df$.</span><span style="color:#D2A8FF">morph</span><span style="color:#E6EDF3">(document.</span><span style="color:#D2A8FF">getElementById</span><span style="color:#E6EDF3">(</span><span style="color:#A5D6FF">'app'</span><span style="color:#E6EDF3">), </span><span style="color:#A5D6FF">'&lt;p&gt;Hello&lt;/p&gt;'</span><span style="color:#E6EDF3">);</span></span><span><span style="color:#E6EDF3">&lt;/</span><span style="color:#7EE787">script</span><span style="color:#E6EDF3">&gt;</span></span></code></pre>
+          <pre data-tab="esm" data-lang="html"><code><span><span style="color:#E6EDF3">&lt;</span><span style="color:#7EE787">script</span><span style="color:#E6EDF3"> </span><span style="color:#79C0FF">type</span><span style="color:#E6EDF3">=</span><span style="color:#A5D6FF">"module"</span><span style="color:#E6EDF3">&gt;</span></span><span><span style="color:#E6EDF3">  </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> { morph } </span><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">'https://cdn.jsdelivr.net/npm/defuss-morph@latest/dist/all.min.js'</span><span style="color:#E6EDF3">;</span></span><span><span style="color:#E6EDF3">  </span><span style="color:#D2A8FF">morph</span><span style="color:#E6EDF3">(document.</span><span style="color:#D2A8FF">getElementById</span><span style="color:#E6EDF3">(</span><span style="color:#A5D6FF">'app'</span><span style="color:#E6EDF3">), </span><span style="color:#A5D6FF">'&lt;p&gt;Hello&lt;/p&gt;'</span><span style="color:#E6EDF3">);</span></span><span><span style="color:#E6EDF3">&lt;/</span><span style="color:#7EE787">script</span><span style="color:#E6EDF3">&gt;</span></span></code></pre>
+          <span class="mk-code-block-status" role="status"></span>
+        </figure>
+      </div>
+      <div class="separator dm-sep-vertical" data-orientation="vertical" role="separator"></div>
+      <hr class="separator dm-sep-horizontal">
+      <div class="dm-way">
+        <h3 class="dm-way-title"><svg class="dm-icon" aria-hidden="true"><use href="#i-package"/></svg>With a package manager</h3>
+        <p class="dm-way-desc">Pins the version, works offline and lets your bundler tree-shake. The package entries register no global.</p>
+        <figure class="mk-code-block">
+          <div class="mk-code-block-head">
+            <div class="mk-code-block-tabs" role="radiogroup" aria-label="Package manager">
+              <label><input type="radio" name="cb-pm" value="bun" checked>bun</label><label><input type="radio" name="cb-pm" value="npm">npm</label><label><input type="radio" name="cb-pm" value="pnpm">pnpm</label>
+            </div>
+            <button class="mk-code-block-copy" type="button" aria-label="Copy code"><svg class="dm-icon" aria-hidden="true"><use href="#i-copy"/></svg></button>
+          </div>
+          <pre data-tab="bun" data-lang="sh"><code><span><span style="color:#FFA657">bun</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">add</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">defuss-morph</span></span></code></pre>
+          <pre data-tab="npm" data-lang="sh"><code><span><span style="color:#FFA657">npm</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">install</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">defuss-morph</span></span></code></pre>
+          <pre data-tab="pnpm" data-lang="sh"><code><span><span style="color:#FFA657">pnpm</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">add</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">defuss-morph</span></span></code></pre>
+          <span class="mk-code-block-status" role="status"></span>
+        </figure>
+        <div class="dm-download">
+          <a class="btn" data-variant="outline" href="assets/defuss-morph.min.js" download="defuss-morph.min.js"><svg class="dm-icon" aria-hidden="true"><use href="#i-download"/></svg>defuss-morph.min.js</a>
+          <span class="badge" data-variant="outline"><span data-stat="all.min.js:bytes">18.7 kB</span> · ESM · this build</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="separator dm-sep-wide">
+    <div class="dm-way">
+      <h3 class="dm-way-title"><svg class="dm-icon" aria-hidden="true"><use href="#i-bot"/></svg>Vibe coding</h3>
+      <p class="dm-way-desc">Paste this prompt into your coding agent. It links the repository, so the agent works from the current README.</p>
+      <div class="dm-prompt">
+        <div class="mockup-code" data-chrome="mac" data-title="coding agent · ~/your-app" data-wrap id="agent-prompt">
+          <pre data-prefix=">"><code>Use defuss-morph for DOM updates in this app: https://github.com/kyr0/defuss-morph</code></pre>
+          <pre data-prefix=""><code>Read its README.md first. Install it with the project's package manager, or load dist/all.min.js from jsDelivr where there is no bundler.</code></pre>
+          <pre data-prefix=""><code>Re-render by calling morph(container, html) with the complete next state instead of assigning innerHTML. Give list items a stable key attribute so they move instead of being rebuilt.</code></pre>
+          <pre data-prefix=""><code>Use { diff: true } only for change-sets addressed by key or id, and VNodes where state must be set explicitly, such as checked: false.</code></pre>
+          <pre data-prefix="" data-tone="muted" data-cursor><code>send</code></pre>
+        </div>
+        <button type="button" class="btn dm-prompt-copy" data-variant="secondary" data-size="sm" id="copy-prompt"><svg class="dm-icon" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy prompt</span></button>
+        <span class="sr-only" role="status" id="copy-prompt-status"></span>
+      </div>
+      <p class="dm-way-desc">Give your agent the defuss-vae skills too: it then plans, tests and reviews against a verifier instead of declaring itself done. In Claude Code, the plugin adds the commit and Stop-hook gate. Needs <code>python3</code> 3.9 or newer, <code>git</code> and <code>make</code>.</p>
+      <figure class="mk-code-block" id="vae-install">
+        <div class="mk-code-block-head">
+          <div class="mk-code-block-tabs" role="radiogroup" aria-label="Agent">
+            <label><input type="radio" name="cb-vae" value="skills" checked>Any agent</label><label><input type="radio" name="cb-vae" value="claude">Claude Code plugin</label>
+          </div>
+          <button class="mk-code-block-copy" type="button" aria-label="Copy code"><svg class="dm-icon" aria-hidden="true"><use href="#i-copy"/></svg></button>
+        </div>
+        <pre data-tab="skills" data-lang="sh"><code><span><span style="color:#FFA657">npx</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">skills</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">add</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">kyr0/defuss-vae</span><span style="color:#E6EDF3"> </span><span style="color:#79C0FF">--skill</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">'*'</span></span></code></pre>
+        <pre data-tab="claude" data-lang="sh"><code><span><span style="color:#FFA657">claude</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">plugin</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">marketplace</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">add</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">kyr0/defuss-vae</span></span><span><span style="color:#FFA657">claude</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">plugin</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">install</span><span style="color:#E6EDF3"> </span><span style="color:#A5D6FF">defuss-vae@defuss-vae</span></span></code></pre>
+        <span class="mk-code-block-status" role="status"></span>
+      </figure>
+    </div>
+    </div>
+  </section>
+
+  <div class="container dm-section parallax-reveal" data-reveal="zoom">
+    <div class="corner-leaf dm-consult">
+      <section class="mk-cta" data-variant="split" aria-labelledby="vae-title">
+        <div class="mk-cta-inner">
+          <div class="mk-cta-copy">
+            <div class="dm-cta-head">
+              <div class="aura aura-glow aura-gold dm-cta-portrait" style="--shape-round:1.25rem"><img class="shape-squircle" src="assets/aron-homberg.jpg" width="400" height="400" alt="Portrait of Aron Homberg" loading="lazy"></div>
+              <h2 class="mk-cta-title" id="vae-title">Stressed with inconsistent results and tiring reviews?</h2>
+            </div>
+            <p class="mk-cta-desc">Build more consistent agents with <a href="https://github.com/kyr0/defuss-vae" target="_blank" rel="noopener"><strong>defuss-vae</strong><svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a>, Aron Homberg's <a href="https://vae.defuss.org/" target="_blank" rel="noopener"><strong>Verified Agentic Engineering</strong><svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a> method. Aron is a freelance AI researcher, O'Reilly author (2011), conference speaker, and longtime mentor to software engineering teams.</p>
+          </div>
+          <div class="mk-cta-actions dm-consult-actions">
+            <a class="btn" data-size="lg" href="https://www.linkedin.com/in/aronhomberg/" target="_blank" rel="noopener"><svg class="dm-icon dm-icon-fill" aria-hidden="true"><use href="#i-linkedin"/></svg>Talk to Aron on LinkedIn<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a>
+            <p class="mk-cta-note dm-consult-note">...if you're looking for a remote training or mentoring session for you or your engineering team.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="container dm-section parallax-reveal" data-reveal="zoom">
+    <section class="mk-cta" data-variant="dark" aria-labelledby="cta-title">
+      <div class="mk-cta-inner">
+        <div class="mk-cta-copy">
+          <h2 class="mk-cta-title" id="cta-title">Morph HTML like JSX, without using innerHTML</h2>
+          <p class="mk-cta-desc">Keyed moves, preserved form state and native event behaviour, focus state and input handling - all in one file without dependencies.</p>
+        </div>
+        <div class="mk-cta-actions">
+          <a class="btn" data-size="lg" href="https://github.com/kyr0/defuss-morph" target="_blank" rel="noopener">View on GitHub<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a>
+          <a class="btn" data-variant="outline" data-size="lg" href="#demo">Try the demo again</a>
+        </div>
+        <p class="mk-cta-note">MIT licensed · 0.2.0 · zero runtime dependencies</p>
+      </div>
+    </section>
+  </div>
+
+  </main>
+
+  <footer class="mk-footer" style="width:100%">
+    <div class="mk-footer-inner">
+      <nav class="mk-footer-nav dm-footer-nav" aria-label="Footer">
+        <div class="mk-footer-col">
+          <h3 class="mk-footer-heading">Project</h3>
+          <ul class="mk-footer-list">
+            <li><a href="https://github.com/kyr0/defuss-morph" target="_blank" rel="noopener">Source code<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a></li>
+            <li><a href="https://github.com/kyr0/defuss-morph/blob/main/README.md" target="_blank" rel="noopener">README<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a></li>
+            <li><a href="https://github.com/kyr0/defuss-morph/blob/main/ARCH.md" target="_blank" rel="noopener">Architecture<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a></li>
+            <li><a href="https://github.com/kyr0/defuss-morph/tree/main/examples" target="_blank" rel="noopener">Examples<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a></li>
+          </ul>
+        </div>
+        <div class="mk-footer-col">
+          <h3 class="mk-footer-heading">This page</h3>
+          <ul class="mk-footer-list">
+            <li><a href="#demo">Live demo</a></li>
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#api">API</a></li>
+            <li><a href="#install">Install</a></li>
+          </ul>
+        </div>
+        <div class="mk-footer-col">
+          <h3 class="mk-footer-heading">Works with</h3>
+          <ul class="mk-footer-list">
+            <li><a href="https://github.com/kyr0/defuss-shadcn" target="_blank" rel="noopener">defuss-shadcn<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a></li>
+            <li><a href="https://www.npmjs.com/package/defuss-query" target="_blank" rel="noopener">defuss-query<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a></li>
+            <li><a href="https://dom-router.defuss.org/" target="_blank" rel="noopener">defuss-dom-router<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a></li>
+          </ul>
+        </div>
+        <div class="mk-footer-col">
+          <h3 class="mk-footer-heading">Professional consulting services</h3>
+          <aside class="corner-leaf dm-ad" aria-label="Consulting by Aron Homberg">
+            <div class="dm-ad-head">
+              <div class="aura aura-glow aura-gold dm-ad-portrait" style="--shape-round:1.5rem"><img class="shape-squircle" src="assets/aron-homberg.jpg" width="400" height="400" alt="Portrait of Aron Homberg" loading="lazy"></div>
+              <div>
+                <p class="dm-ad-name">Aron Homberg</p>
+                <p class="dm-ad-role">Freelance computer science expert · independent AI researcher</p>
+              </div>
+            </div>
+            <a class="btn" data-size="sm" href="https://www.linkedin.com/in/aronhomberg/" target="_blank" rel="noopener"><svg class="dm-icon dm-icon-fill" aria-hidden="true"><use href="#i-linkedin"/></svg>Connect on LinkedIn<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a>
+          </aside>
+        </div>
+      </nav>
+      <hr class="separator mk-footer-rule">
+      <div class="mk-footer-bottom">
+        <a href="#top" class="mk-footer-brand" aria-label="Back to the top"><svg class="dm-icon" aria-hidden="true"><use href="#i-logo"/></svg><span class="mk-footer-brand-name">defuss-morph</span></a>
+        <div class="mk-footer-meta">
+          <p class="mk-footer-copy">© 2026 <a href="https://www.linkedin.com/in/aronhomberg/" target="_blank" rel="noopener">Aron Homberg (kyr0)<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a> · MIT. Built with <a href="https://github.com/kyr0/defuss-shadcn" target="_blank" rel="noopener">defuss-shadcn<svg class="dm-icon dm-ext" aria-hidden="true"><use href="#i-external"/></svg><span class="sr-only"> (opens in a new tab)</span></a>.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+<div class="fab" data-scroll-top>
+  <a class="btn fab-trigger" href="#top" aria-label="Back to top"><span class="fab-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-arrow-up"/></svg></span></a>
+</div>
+
+<script type="module" src="https://cdn.jsdelivr.net/npm/defuss-shadcn@0.9.11/dist/components/all.min.js" integrity="sha384-smU3aE2UPGvVE+nQS/ekmmE86ccjq2yap/zPMBoITba6SOq71Fil6vo4HZHaFZRY" crossorigin="anonymous"></script>
+<script type="module" src="assets/site.js"></script>
+</body>
+</html>

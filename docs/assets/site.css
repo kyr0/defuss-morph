@@ -1,0 +1,208 @@
+/* Page layout and composition. Colours, radii and shadows come from defuss-shadcn tokens; components (header, hero,
+   tabs, diagram, code blocks, footer) are defuss-shadcn classes. Only this page's own layout lives here. */
+@layer components {
+  /* the base reset the defuss-shadcn docs site applies, which its Landing Page blocks assume */
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; line-height: 1.6; background: var(--background); color: var(--foreground); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  [hidden] { display: none !important; }
+  /* the header is a direct child of the page, so it stays sticky over every section, not only the hero */
+  .dm-page { overflow-x: clip; }
+  .dm-main { display: flex; flex-direction: column; gap: clamp(5rem, 11vw, 9rem); padding-block-end: clamp(5rem, 11vw, 9rem); }
+  .dm-section { width: 100%; max-width: 76rem; padding-inline: 1rem; scroll-margin-top: 5rem; }
+  /* section links move focus to the section (tabindex -1) for screen readers; it is not a control, so no ring */
+  .dm-page [tabindex="-1"]:focus { outline: none; }
+  .dm-icon { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .dm-icon-fill { fill: currentColor; stroke: none; }
+  .dm-brand-icon { color: var(--chart-2); }
+  .dm-ext { width: .75em; height: .75em; margin-inline-start: .15em; vertical-align: -.05em; opacity: .75; }
+  .mk-hero-note a, .mk-footer-copy a, .mk-section-header-desc a, .dm-api-lead a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  :where(.dm-main) :not(pre) > code { font-family: var(--font-mono); font-size: .875em; }
+  .mk-hero-desc code { padding: .05em .3em; border-radius: var(--radius-sm); background: color-mix(in oklch, var(--muted) 80%, transparent); }
+
+  /* hero */
+  .dm-flip { margin: 0; font-size: clamp(1.5rem, 4.5vw, 2.5rem); font-weight: 700; letter-spacing: -.03em; line-height: 1.15; }
+  .dm-accent { background: linear-gradient(90deg, var(--chart-1), var(--chart-3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .dm-intro { display: grid; gap: 2rem 2.25rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    width: 100%; max-width: 64rem; margin: clamp(5.5rem, 13vw, 10rem) auto 0; padding-inline: 1.25rem; text-align: start; }
+  .dm-intro-item { display: flex; flex-direction: column; gap: .5rem; }
+  .dm-intro-icon { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: var(--radius-xl); font-size: 2.25rem;
+    color: var(--foreground); background: color-mix(in oklch, var(--chart-2) 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--chart-2) 35%, transparent); }
+  .dm-intro h3 { margin: .25rem 0 0; font-size: .9375rem; font-weight: 600; }
+  .dm-intro p { margin: 0; font-size: .8125rem; line-height: 1.6; color: var(--muted-foreground); text-wrap: pretty; }
+  .dm-intro strong { color: var(--foreground); font-weight: 600; }
+
+  /* playground */
+  .dm-play { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0; margin-block-start: 2.5rem; padding: 0; overflow: hidden;
+    box-shadow: var(--shadow-xl), 0 30px 80px -40px color-mix(in oklch, var(--chart-2) 45%, transparent); }
+  .dm-play-config { display: flex; flex-direction: column; gap: 1rem; min-width: 0; padding: clamp(1rem, 2.5vw, 1.75rem);
+    background: color-mix(in oklch, var(--muted) 45%, transparent); border-inline-end: 1px solid var(--border); }
+  .dm-play-run { display: flex; flex-direction: column; gap: 1rem; min-width: 0; padding: clamp(1rem, 2.5vw, 1.75rem); }
+  .dm-scenario { display: flex; flex-direction: column; gap: 1rem; }
+  .dm-scenario-desc { margin: 0; font-size: .875rem; color: var(--muted-foreground); text-wrap: pretty; min-height: 4.5em; }
+  .dm-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+  .dm-row .field-label, .dm-label { font-size: .8125rem; font-weight: 500; }
+  /* The next state and its call: a textarea stacked on a painted copy (site.js), on the dark surface of the code
+     blocks in both color schemes, because the github-dark-default token colors need it. Both layers share every
+     metric that affects line breaks; the copy sets the height, the textarea stretches over it. */
+  .dm-code { overflow: hidden; border: 1px solid oklch(0.3 0.01 260); border-radius: var(--radius-lg); background: oklch(0.17 0.01 260); color: #e6edf3; }
+  .dm-code:has(:focus-visible) { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .dm-editor { display: grid; }
+  .dm-editor > * { grid-area: 1 / 1; min-width: 0; margin: 0; padding: .75rem 1rem; border: 0; border-radius: 0; background: none; box-shadow: none;
+    font-family: var(--font-mono); font-size: .75rem; font-variant-ligatures: none; line-height: 1.55; letter-spacing: normal; tab-size: 2;
+    white-space: pre-wrap; overflow-wrap: anywhere; }
+  .dm-editor-paint { min-height: 13rem; color: transparent; pointer-events: none; }
+  .dm-editor-src { align-self: stretch; overflow: hidden; resize: none; color: inherit; caret-color: #e6edf3; outline: none; }
+  .dm-editor-src::selection { background: oklch(0.6 0.12 250 / .4); }
+  .dm-editor[data-painted] .dm-editor-paint { color: inherit; }
+  .dm-editor[data-painted] .dm-editor-src { color: transparent; }
+  .dm-call { margin: 0; padding: .5rem 1rem; border-block-start: 1px solid oklch(0.3 0.01 260); font-family: var(--font-mono); font-size: .75rem;
+    line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+  @media (forced-colors: active) {
+    /* system colors own the editor: no painted copy, plain text */
+    .dm-editor[data-painted] .dm-editor-paint { color: transparent; }
+    .dm-editor[data-painted] .dm-editor-src { color: CanvasText; }
+  }
+  .dm-stage-wrap { position: relative; }
+  .dm-stage-label { position: absolute; inset-block-start: -.6rem; inset-inline-start: .75rem; padding-inline: .375rem; font-size: .6875rem; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--muted-foreground); background: var(--card); }
+  .dm-stage { min-height: 15rem; padding: 1.25rem 1rem 1rem; border: 1px dashed var(--border); border-radius: var(--radius-lg); background: var(--background); }
+  .dm-stats { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); margin: 0; }
+  .dm-stats > div { padding: .5rem .75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); }
+  .dm-stats dt { font-size: .6875rem; color: var(--muted-foreground); }
+  .dm-stats dd { margin: 0; font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .dm-stats dd[data-tone="good"] { color: var(--dm-good); }
+  .dm-stats dd[data-tone="bad"] { color: var(--dm-bad); }
+  .dm-verdict { margin: 0; font-size: .875rem; color: var(--muted-foreground); min-height: 3em; text-wrap: pretty; }
+  .dm-verdict strong { color: var(--foreground); }
+  :root { --dm-good: oklch(.55 .15 150); --dm-bad: oklch(.58 .2 27); }
+  :root.dark { --dm-good: oklch(.78 .16 150); --dm-bad: oklch(.72 .17 27); }
+  /* defuss-shadcn shortens tab labels that run out of room ("Keye…"); on a phone the tab lists take two columns */
+  @media (max-width: 30rem) {
+    .dm-play .tab-list, .dm-api .tab-list { width: 100%; grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 60rem) {
+    .dm-play { grid-template-columns: minmax(0, 1fr); }
+    .dm-play-config { border-inline-end: 0; border-block-end: 1px solid var(--border); }
+  }
+
+  /* the scenarios' own markup inside the stage */
+  .dm-stage ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+  .dm-stage li { display: flex; align-items: center; gap: .625rem; padding: .5rem .75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); }
+  .dm-stage li .input { flex: 1; min-width: 0; }
+  .dm-stage li[data-state="done"] { border-color: var(--dm-good); }
+  .dm-stage li[data-state="failed"] { border-color: var(--dm-bad); }
+  .dm-stage li.dm-urgent { border-color: var(--chart-1); box-shadow: inset 3px 0 0 var(--chart-1); }
+  .dm-stage .dm-item-name { min-width: 4.5rem; font-weight: 500; }
+  .dm-stage form { display: flex; flex-direction: column; gap: .875rem; margin: 0; }
+  .dm-stage .dm-card { padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--card); }
+  .dm-stage .dm-card h4 { margin: 0 0 .375rem; font-size: 1.125rem; }
+  .dm-stage .dm-card p { margin: 0; color: var(--muted-foreground); font-size: .875rem; }
+
+  /* how it works */
+  .dm-flow { margin-block-start: 1rem; }
+  .dm-how-grid { display: grid; gap: 2.5rem 3rem; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); margin-block-start: clamp(3rem, 6vw, 4.5rem); }
+  .dm-subtitle { margin: 0 0 1.25rem; font-size: 1.25rem; font-weight: 600; letter-spacing: -.01em; }
+  .dm-keeps { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); }
+  .dm-keep { display: flex; flex-direction: column; gap: .5rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card);
+    transition: transform .2s ease, box-shadow .2s ease; }
+  .dm-keep:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .dm-keep h4 { margin: 0; font-size: .9375rem; }
+  .dm-keep p { margin: 0; font-size: .875rem; color: var(--muted-foreground); text-wrap: pretty; }
+  .dm-rules .mk-process-step-title { font-size: 1rem; }
+  @media (max-width: 60rem) { .dm-how-grid { grid-template-columns: minmax(0, 1fr); } }
+
+  /* API */
+  .dm-api { margin-block-start: 2.5rem; }
+  .dm-api .tab-list { max-width: 100%; overflow-x: auto; margin-block-end: 1.5rem; }
+  .dm-api .tab-content { display: flex; flex-direction: column; gap: 1.5rem; }
+  .dm-api .tab-content[hidden] { display: none !important; }
+  .dm-api-lead { margin: 0; max-width: 52rem; color: var(--muted-foreground); }
+  .dm-table .table-cell:first-child, .dm-table .table-head:first-child { white-space: nowrap; }
+  .dm-table .table-cell { vertical-align: top; }
+  .dm-api .mk-code-block { margin: 0; }
+  .dm-api .mk-code-block code > span { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  /* numbers */
+  .mk-stats-desc a { color: var(--foreground); text-decoration: underline; text-underline-offset: 2px; }
+  .mk-stat-value .badge { vertical-align: middle; }
+  .dm-metrics { margin: 0; align-self: center; display: flex; flex-direction: column; gap: .5rem; aspect-ratio: auto; overflow: visible; background: none; }
+  .dm-metrics .mockup-code { margin: 0; }
+  .dm-figcaption { font-size: .75rem; color: var(--muted-foreground); }
+
+  /* install: one leaf-cornered panel on a faint dot pattern */
+  .dm-use {
+    --shape-round: 3rem; --shape-ink: color-mix(in oklch, var(--foreground) 9%, transparent); --shape-pattern: 18px;
+    display: flex; flex-direction: column; gap: 2rem; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid var(--border);
+    background-color: color-mix(in oklch, var(--card) 75%, transparent);
+    box-shadow: var(--shadow-xl), 0 30px 80px -40px color-mix(in oklch, var(--chart-2) 45%, transparent);
+  }
+  .dm-ways { display: flex; gap: 2.5rem; }
+  .dm-way { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1.25rem; }
+  .dm-way-title { display: flex; align-items: center; gap: .5rem; margin: 0; font-size: 1.25rem; font-weight: 600; }
+  .dm-way-desc { margin: 0; color: var(--muted-foreground); text-wrap: pretty; }
+  .dm-use .mk-code-block { margin: 0; }
+  /* the block's CSS-only tabs know npm / pnpm / bun; these are this page's own tab values */
+  .mk-code-block:has(input[value="global"]:checked) [data-tab="global"], .mk-code-block:has(input[value="esm"]:checked) [data-tab="esm"],
+  .mk-code-block:has(input[value="html"]:checked) [data-tab="html"], .mk-code-block:has(input[value="jsx"]:checked) [data-tab="jsx"],
+  .mk-code-block:has(input[value="diff"]:checked) [data-tab="diff"],
+  .mk-code-block:has(input[value="skills"]:checked) [data-tab="skills"], .mk-code-block:has(input[value="claude"]:checked) [data-tab="claude"] { display: block; }
+  /* half-width columns: wrap instead of cutting, with continuation lines hanging past the number column */
+  .dm-use .mk-code-block code > span { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .dm-use .mk-code-block pre[data-numbers] code > span { padding-inline-start: 3rem; text-indent: -3rem; }
+  .dm-download { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+  .dm-usage { display: flex; flex-direction: column; gap: 1.25rem; }
+  .dm-sep-horizontal { display: none; }
+  .dm-sep-wide { width: 100%; margin: 0; }
+  @media (max-width: 56rem) {
+    .dm-ways { flex-direction: column; }
+    .dm-sep-vertical { display: none; }
+    .dm-sep-horizontal { display: block; width: 100%; margin: 0; }
+  }
+  .dm-prompt { position: relative; }
+  .dm-prompt .mockup-code { margin: 0; }
+  .dm-prompt-copy { position: absolute; inset-block-start: .3rem; inset-inline-end: .5rem; }
+
+  /* defuss-vae CTA: a leaf-cornered card; portrait + question, then the pitch, then the action with its note */
+  .dm-consult { --shape-round: 3rem; overflow: hidden; border: 1px solid var(--border); background-color: var(--card);
+    box-shadow: var(--shadow-xl), 0 30px 80px -40px color-mix(in oklch, var(--chart-2) 45%, transparent); }
+  .dm-consult .mk-cta, .dm-consult .mk-cta[data-variant] { background: transparent; }
+  .dm-consult .mk-cta[data-variant] .mk-cta-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; align-items: center; gap: 1.25rem 2rem; text-align: start;
+    padding: clamp(1.5rem, 3vw, 2.25rem) clamp(1.5rem, 3vw, 2.5rem); background: transparent; border-radius: 0; }
+  .dm-consult .mk-cta[data-variant] .mk-cta-copy { display: contents; }
+  .dm-consult .dm-cta-head { grid-column: 1; display: flex; align-items: center; gap: 1.25rem; }
+  .dm-consult .mk-cta[data-variant] .mk-cta-title { margin: 0; font-size: clamp(1.25rem, 2.2vw, 1.625rem); }
+  .dm-consult .mk-cta[data-variant] .mk-cta-desc { grid-column: 2; margin: 0; font-size: .9375rem; }
+  .dm-consult .mk-cta-desc a { color: var(--foreground); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+  .dm-consult .mk-cta[data-variant] .mk-cta-actions { grid-column: 3; justify-content: flex-end; }
+  .dm-consult .dm-consult-actions { flex-direction: column; align-items: flex-end; gap: .625rem; }
+  .dm-consult .dm-consult-note { max-width: 17rem; margin: 0; font-size: .8125rem; line-height: 1.45; text-align: end; color: var(--muted-foreground); text-wrap: pretty; }
+  .dm-cta-portrait { width: 4rem; flex: none; }
+  .dm-cta-portrait img { display: block; width: 100%; height: auto; }
+  @media (max-width: 56rem) {
+    .dm-consult .mk-cta[data-variant] .mk-cta-inner { grid-template-columns: minmax(0, 1fr); }
+    .dm-consult .dm-cta-head, .dm-consult .mk-cta[data-variant] .mk-cta-desc, .dm-consult .mk-cta[data-variant] .mk-cta-actions { grid-column: auto; justify-content: flex-start; }
+    .dm-consult .dm-consult-actions { align-items: flex-start; }
+    .dm-consult .dm-consult-note { text-align: start; }
+  }
+
+  /* footer ad: a leaf-cornered panel with a squircle portrait in a gold halo */
+  .dm-ad {
+    --shape-round: 2rem; display: flex; flex-direction: column; gap: .875rem; padding: 1.25rem;
+    border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, color-mix(in oklch, var(--chart-1) 16%, var(--card)), var(--card) 65%);
+  }
+  .dm-ad-head { display: flex; align-items: center; gap: .875rem; }
+  .dm-ad-portrait { width: 5.5rem; flex: none; }
+  .dm-ad-portrait img { display: block; width: 100%; height: auto; }
+  .dm-ad-name { margin: 0; font-size: 1.25rem; font-weight: 600; color: var(--foreground); }
+  .dm-ad-role { margin: 0; font-size: .8125rem; line-height: 1.5; color: var(--muted-foreground); }
+  .dm-ad .btn { align-self: flex-start; }
+  @media (min-width: 64rem) { .dm-footer-nav.mk-footer-nav { grid-template-columns: 1fr 1fr 1fr 1.8fr; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dm-keep { transition: none; }
+  }
+  @media (forced-colors: active) {
+    .dm-accent { color: CanvasText; background: none; }
+  }
+}
