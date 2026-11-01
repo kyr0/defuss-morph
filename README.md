@@ -408,7 +408,7 @@ The website's Benchmark section times typical operations on a table of rows, aft
 - `morph()` of the whole list, without keys
 - diff mode, sending only the changed rows (n/a for replace, swap, remove and clear: diff mode never removes or moves)
 
-`make bench` runs the same suite (`docs/demos/bench.ts`) in headless Chromium and WebKit, with HTML strings and with VNodes. It prints a table per browser and input, writes `output/bench.json`, and writes the run into the website's recorded table with its date, machine and browser versions. `make coverage` writes the unit test coverage into the website the same way.
+`make bench` runs the same suite (`docs/demos/bench.ts`) in headless Chromium, Firefox and WebKit, with HTML strings and with VNodes. It prints a table per browser and input, writes `output/bench.json`, and writes the run into the website's recorded table with its date, machine and browser versions. `make coverage` writes the unit test coverage into the website the same way.
 
 A cell is the median of 7 timed runs (3 for 10,000 rows), after 2 untimed ones. A run times the update and the layout it causes; building the input is not timed. After every run the table is checked against the expected rows. This README states no numbers, because they depend on the machine and the browser; the website's recorded table names the run it shows.
 
@@ -428,10 +428,10 @@ The dev server (`scripts/serve.mjs`) serves the repository read-only with cachin
 | Target | What it checks |
 | --- | --- |
 | `make lint` | oxlint with warnings as errors, then a strict `tsc` type check |
-| `make test` | Every test file in real Chromium (Playwright), and all but the browser-only ones in happy-dom |
-| `make coverage` | The same run with merged v8 coverage |
-| `make bench` | The website's benchmark in headless Chromium, with HTML strings and VNodes; a table on stdout and `output/bench.json` |
-| `make e2e` | Packs the package, installs the tarball in a clean project and uses it from Node (ESM and CommonJS, happy-dom, with defuss-store), then drives the website, every demo on it and every example page in Chromium; results land in `output/` |
+| `make test` | Every test file in real Chromium and real Firefox (Playwright), and all but the browser-only ones in happy-dom |
+| `make coverage` | The happy-dom and Chromium runs with merged V8 coverage (V8 cannot measure in Firefox); writes the website's coverage rings |
+| `make bench` | The website's benchmark in headless Chromium, Firefox and WebKit, with HTML strings and VNodes; tables on stdout, `output/bench.json` and the website's recorded run |
+| `make e2e` | Packs the package, installs the tarball in a clean project and uses it from Node (ESM and CommonJS, happy-dom, with defuss-store), then drives the website, every demo on it and every example page in Chromium, and the built library in Chromium and Firefox; results land in `output/` |
 
 `dist/` is committed so the ZIP download and jsDelivr's GitHub URLs serve the built files; `make build` rewrites it, and `docs/` (the website, served by GitHub Pages at morph.defuss.org) with it: the demos in `docs/demos/` are bundled into `docs/assets/demos.js` (and the frames' `router-demo.js` and `bench.js`), the sibling packages are copied from `node_modules` into `docs/assets/vendor/`, and every code block names the demo source it shows. After `npm publish`, `make purge-cdn` refreshes jsDelivr's `@latest` cache. Design notes: [ARCH.md](ARCH.md). Release notes: [CHANGELOG.md](CHANGELOG.md).
 

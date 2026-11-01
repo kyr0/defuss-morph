@@ -61,6 +61,11 @@ describe("bench-page", () => {
     const html = benchBlock(report);
     expect(html).toContain("on 2026-11-01, Apple M5 Max (darwin arm64), against defuss-morph 0.3.0, in Chromium 156.0.8078.4 and WebKit 27.2");
     expect(html).toContain("WebKit counts whole milliseconds.");
+    const firefox = { ...report.browsers[1], id: "firefox", name: "Firefox", version: "157.0" };
+    expect(benchBlock({ ...report, browsers: [report.browsers[0], firefox, report.browsers[1]] })).toContain(
+      "in Chromium 156.0.8078.4, Firefox 157.0 and WebKit 27.2 (Playwright, headless).",
+    );
+    expect(benchBlock({ ...report, browsers: [firefox, report.browsers[1]] })).toContain("Firefox and WebKit count whole milliseconds.");
   });
 
   it("refuses a report with a wrong or missing result, so a broken run never reaches the page", () => {
@@ -76,6 +81,7 @@ describe("bench-page", () => {
     expect(html).toContain('data-level="mid" aria-valuenow="80"');
     expect(html).toContain('data-level="low" aria-valuenow="65"');
     expect(html).toContain('<span data-fact="tests">1,265</span> test runs');
+    expect(html).toContain('also runs every browser test in real Firefox');
     expect(() => coverageBlock({ total: { lines: { pct: 101 } } } as never, 1)).toThrow(/no lines coverage/);
   });
 

@@ -38,13 +38,15 @@ export default defineConfig({
         },
       },
       {
-        // authoritative test bed: full suite in real Chromium via Playwright
+        // authoritative test bed: the full suite in real Chromium and Firefox via Playwright. V8 coverage reads
+        // Chromium only (VERIFIED: @vitest/coverage-v8 refuses a Firefox instance), so `make coverage` runs node and
+        // "browser (chromium)", and `make test` runs all three
         test: {
           name: "browser",
           browser: {
             enabled: true,
             provider: playwright(),
-            instances: [{ browser: "chromium" }],
+            instances: [{ browser: "chromium" }, { browser: "firefox" }],
             headless: true,
           },
           testTimeout: 60000,

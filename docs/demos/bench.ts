@@ -1,6 +1,6 @@
 // The benchmark: typical operations on a table of rows, after js-framework-benchmark, each timed with every way of
 // updating the table. It runs inside docs/bench.html (bench-stage.ts puts it on `window.bench`), which the website
-// embeds and drives (bench-ui.ts) and `make bench` opens in headless Chromium (scripts/bench.mjs). The frame keeps the
+// embeds and drives (bench-ui.ts) and `make bench` opens in headless Chromium, Firefox and WebKit (scripts/bench.mjs). The frame keeps the
 // table's style and layout work apart from the website's own large page. VERIFIED: scripts/e2e/browser.mjs runs it
 // with HTML strings and with VNodes and checks the table after every run.
 import { type VNode, morph } from "defuss-morph";

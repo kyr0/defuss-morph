@@ -16,7 +16,7 @@ help: ## Show available targets
 
 setup: ## Install bun dependencies (frozen lockfile) and the Playwright Chromium browser
 	bun install --frozen-lockfile
-	bunx playwright install $(if $(CI),--with-deps) chromium
+	bunx playwright install $(if $(CI),--with-deps) chromium firefox
 
 # dist/ is committed (GitHub ZIP download, jsDelivr /gh/), so every build rewrites it from src/.
 build: ## Compile (pkgroll) → CDN bundle → minify → sizes → website copies → dist consistency check
@@ -36,7 +36,7 @@ lint: ## oxlint (warnings fail) + strict tsc type-check
 typecheck: ## Strict tsc type-check (no emit)
 	bun run typecheck
 
-test: ## Unit + browser tests: happy-dom and real Chromium (Vitest projects)
+test: ## Unit + browser tests: happy-dom, real Chromium and real Firefox (Vitest projects)
 	bun run test
 
 test-watch: ## Tests in watch mode
@@ -95,7 +95,7 @@ log: ## Last 40 lines of the dev server log (stdout, stderr)
 metrics: ## Print the measured artifact sizes (dist/stats.json)
 	@cat dist/stats.json
 
-bench: build ## The website's benchmark in headless Chromium and WebKit → tables, output/bench.json, the website's recorded run
+bench: build ## The website's benchmark in headless Chromium, Firefox and WebKit → tables, output/bench.json, the website's recorded run
 	node scripts/bench.mjs
 
 purge-cdn: ## Purge the jsDelivr @latest cache for the CDN assets (after npm publish)

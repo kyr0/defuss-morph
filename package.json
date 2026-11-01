@@ -43,7 +43,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false -p tsconfig.json && tsc -p docs/demos/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage --reporter=default --reporter=json --outputFile.json=coverage/tests.json",
+    "coverage": "vitest run --coverage --project node --project 'browser (chromium)' --reporter=default --reporter=json --outputFile.json=coverage/tests.json",
     "e2e": "make e2e",
     "verify": "make verify",
     "purge-cdn": "bun scripts/purge-cdn.ts",

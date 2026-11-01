@@ -1,10 +1,11 @@
-// Browser e2e: the website (docs/) and every example page in real Chromium, against the built files they load
+// Browser e2e: the website (docs/) and every example page in real Chromium, and the built library also in Firefox, against
+// the built files they load
 // (docs/assets/defuss-morph.mjs = dist/index.mjs, checked by check-dist; examples load ../dist/all.js).
 // Fails on console errors, page errors and failed requests. Evidence: output/e2e-browser.json + screenshots.
 // VERIFIED: it needs the network, because docs/ loads defuss-shadcn from jsDelivr and a failed request fails the run.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { chromium } from 'playwright';
+import { chromium, firefox } from 'playwright';
 import { createStaticServer } from '../serve.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -70,8 +71,8 @@ const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 
 /** Opens a page and records every console error, page error and failed request until `done()`. */
-async function open(path) {
-  const page = await context.newPage();
+async function open(path, inContext = context) {
+  const page = await inContext.newPage();
   const problems = [];
   page.on('console', (msg) => { if (msg.type() === 'error') problems.push(`console: ${msg.text()}`); });
   page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
@@ -440,7 +441,7 @@ try {
   })));
   const NO_DIFF_RECORDED = ['replace', 'swap', 'remove', 'clear'];
   check('docs: the recorded run has a table per browser with a time in every cell, n/a where diff mode cannot express it',
-    recorded.map((p) => p.id).join() === 'bench-panel-chromium,bench-panel-webkit' && recorded.every((p) => p.rows.length === 20
+    recorded.map((p) => p.id).join() === 'bench-panel-chromium,bench-panel-firefox,bench-panel-webkit' && recorded.every((p) => p.rows.length === 20
       && p.rows.every(([op, ...cells]) => cells.length === 4 && cells.every((c, i) => (i === 3 && NO_DIFF_RECORDED.includes(op) ? c === 'n/a' : /^\d+(\.\d)?$/.test(c))))),
     JSON.stringify(recorded.map((p) => [p.id, p.rows.length])));
   await page.locator('#bench-tab-webkit').scrollIntoViewIfNeeded();
@@ -491,27 +492,34 @@ try {
   check('docs: no console errors or failed requests', problems.length === 0, problems.join('; '));
   await page.close();
 
-  // ---- the built library in Chromium: keyed reorders, moved with moveBefore and with insertBefore --------------------
-  const lib = await open('/docs/bench.html');
-  check('library: Chromium has moveBefore', await lib.page.evaluate(() => typeof Element.prototype.moveBefore === 'function'));
-  for (const moveBefore of [true, false]) {
-    const matrix = await lib.page.evaluate(async (moveBefore) => {
-      const [{ morph }, { reorderMatrix }] = await Promise.all([import('/docs/assets/defuss-morph.mjs'), import('/scripts/e2e/reorder-matrix.mjs')]);
-      return reorderMatrix({ document, morph, moveBefore });
-    }, moveBefore);
-    for (const r of matrix) check(`library: ${r.name}`, r.ok, r.detail);
+  // ---- the built library in Chromium and Firefox: keyed reorders, moved with moveBefore and with insertBefore ---------
+  const firefoxBrowser = await firefox.launch();
+  try {
+    for (const [engine, engineContext] of [['Chromium', context], ['Firefox', await firefoxBrowser.newContext()]]) {
+      const lib = await open('/docs/bench.html', engineContext);
+      check(`library (${engine}): the browser has moveBefore`, await lib.page.evaluate(() => typeof Element.prototype.moveBefore === 'function'));
+      for (const moveBefore of [true, false]) {
+        const matrix = await lib.page.evaluate(async (moveBefore) => {
+          const [{ morph }, { reorderMatrix }] = await Promise.all([import('/docs/assets/defuss-morph.mjs'), import('/scripts/e2e/reorder-matrix.mjs')]);
+          return reorderMatrix({ document, morph, moveBefore });
+        }, moveBefore);
+        for (const r of matrix) check(`library (${engine}): ${r.name}`, r.ok, r.detail);
+      }
+      const svg = await lib.page.evaluate(async () => {
+        const { morph } = await import('/docs/assets/defuss-morph.mjs');
+        const el = document.body.appendChild(document.createElement('div'));
+        morph(el, '<svg viewBox="0 0 10 10"><defs><linearGradient id="e2e-g"><stop offset="0" stop-color="red"></stop></linearGradient><clipPath id="e2e-c"><rect width="5" height="5"></rect></clipPath></defs><rect width="10" height="10" fill="url(#e2e-g)" clip-path="url(#e2e-c)"></rect></svg>');
+        const kinds = [...el.querySelectorAll('defs > *')].map((n) => n.constructor.name);
+        el.remove();
+        return kinds.join();
+      });
+      check(`library (${engine}): camelCase SVG elements from an HTML string are real SVG elements`, svg === 'SVGLinearGradientElement,SVGClipPathElement', svg);
+      check(`library (${engine}): the reorders ran without errors`, lib.problems.length === 0, lib.problems.join('; '));
+      await lib.page.close();
+    }
+  } finally {
+    await firefoxBrowser.close();
   }
-  const svg = await lib.page.evaluate(async () => {
-    const { morph } = await import('/docs/assets/defuss-morph.mjs');
-    const el = document.body.appendChild(document.createElement('div'));
-    morph(el, '<svg viewBox="0 0 10 10"><defs><linearGradient id="e2e-g"><stop offset="0" stop-color="red"></stop></linearGradient><clipPath id="e2e-c"><rect width="5" height="5"></rect></clipPath></defs><rect width="10" height="10" fill="url(#e2e-g)" clip-path="url(#e2e-c)"></rect></svg>');
-    const kinds = [...el.querySelectorAll('defs > *')].map((n) => n.constructor.name);
-    el.remove();
-    return kinds.join();
-  });
-  check('library: camelCase SVG elements from an HTML string are real SVG elements', svg === 'SVGLinearGradientElement,SVGClipPathElement', svg);
-  check('library: the reorders ran without errors', lib.problems.length === 0, lib.problems.join('; '));
-  await lib.page.close();
 
   // ---- examples: each page's own scenario, then every button once, without an error ---------------------------------
   const examples = readdirSync(join(ROOT, 'examples')).filter((f) => f.endsWith('.html')).sort();

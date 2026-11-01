@@ -96,7 +96,7 @@ ${tabs}
       </div>
 ${report.browsers.map((b, i) => panel(report, b, i === 0)).join("\n")}
     </div>
-    <p class="dm-figcaption">Measured with <code>make bench</code> on ${escape(report.date.slice(0, 10))}, ${escape(report.machine)}, against defuss-morph ${escape(report.version)}, in ${browsers} (Playwright, headless). Each time is the median of 7 runs in ms (3 for 10,000 rows), after 2 untimed ones, of the update and the layout it causes; the fastest of each row in bold.${coarse.length ? ` ${list(coarse)} counts whole milliseconds.` : ""} The figures differ by machine and from run to run; the benchmark below measures yours.</p>`;
+    <p class="dm-figcaption">Measured with <code>make bench</code> on ${escape(report.date.slice(0, 10))}, ${escape(report.machine)}, against defuss-morph ${escape(report.version)}, in ${browsers} (Playwright, headless). Each time is the median of 7 runs in ms (3 for 10,000 rows), after 2 untimed ones, of the update and the layout it causes; the fastest of each row in bold.${coarse.length ? ` ${list(coarse)} count${coarse.length === 1 ? "s" : ""} whole milliseconds.` : ""} The figures differ by machine and from run to run; the benchmark below measures yours.</p>`;
 };
 
 export interface CoverageSummary {
@@ -127,7 +127,7 @@ export const coverageBlock = (summary: CoverageSummary, testRuns: number): strin
 ${rings}
       </div>
     </div>
-    <p class="dm-figcaption"><span data-fact="tests">${testRuns.toLocaleString("en-US")}</span> test runs: every test file runs in real Chromium, and all but the browser-only ones also in happy-dom. V8 measures the coverage of <code>src/</code> in both and merges it (<code>make coverage</code>).</p>`;
+    <p class="dm-figcaption">V8 measures the coverage of <code>src/</code> in <span data-fact="tests">${testRuns.toLocaleString("en-US")}</span> test runs, every test file in real Chromium and all but the browser-only ones in happy-dom, and merges both (<code>make coverage</code>). <code>make test</code> also runs every browser test in real Firefox, where V8 cannot measure.</p>`;
 };
 
 /** `html` with the block between `<!-- name:start -->` and `<!-- name:end -->` replaced; throws without both markers. */

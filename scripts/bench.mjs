@@ -1,4 +1,4 @@
-// make bench: the website's benchmark (docs/demos/bench.ts) in headless Chromium and WebKit, on docs/bench.html as
+// make bench: the website's benchmark (docs/demos/bench.ts) in headless Chromium, Firefox and WebKit, on docs/bench.html as
 // `make build` wrote it, once with HTML strings and once with VNodes. One log line per operation and method, then a
 // table per browser and input; output/bench.json keeps the run, and the website's recorded table (docs/index.html,
 // between <!-- bench:start --> and <!-- bench:end -->) is rewritten from it with the date, machine and versions.
@@ -6,7 +6,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { cpus } from 'node:os';
 import { join } from 'node:path';
-import { chromium, webkit } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
 import { benchBlock, replaceBlock } from './lib/bench-page.ts';
 import { createStaticServer } from './serve.mjs';
 
@@ -14,7 +14,7 @@ const ROOT = join(import.meta.dirname, '..');
 const OUT = join(ROOT, 'output');
 const PAGE = join(ROOT, 'docs', 'index.html');
 const log = (level, message) => console.log(`${new Date().toISOString()} ${level} bench ${message}`);
-const BROWSERS = [['chromium', 'Chromium', chromium], ['webkit', 'WebKit', webkit]];
+const BROWSERS = [['chromium', 'Chromium', chromium], ['firefox', 'Firefox', firefox], ['webkit', 'WebKit', webkit]];
 
 const server = createStaticServer(ROOT);
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));

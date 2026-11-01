@@ -93,3 +93,9 @@ Wrap: EVERY lead becomes a test | .vae/VERIFY.py rule | one MEMORY line with BC,
 2026-11-01T20:15:09Z s=97c0601e FINDING scripts/bench.mjs learn=test: bench-page.test.ts: benchBlock throws on a wrong result; make bench ran with both browsers (exit 0)
 2026-11-01T20:15:09Z s=97c0601e FINDING docs/index.html eyebrows learn=test: browser.mjs checks every section header starts with a badge with an icon and every <use href> resolves
 2026-11-01T20:15:09Z s=97c0601e FINDING CHANGELOG.md learn=test: version.test.ts: top entry equals package.json version, files contains CHANGELOG.md
+2026-11-01T20:31:54Z s=97c0601e FAIL tests.e2e.1
+2026-11-01T20:38:20Z s=97c0601e DONE fp=690ac8983e74 cov=97.7% paths=.claude-plugin/marketplace.json,.claude-plugin/plugin.json,.codex-plugin/plugin.json,AGENTS.md(+78)
+2026-11-01T20:38:20Z s=97c0601e FINDING vitest.config.ts browser instances + package.json coverage learn=verifier: make verify runs both; a coverage run including Firefox fails at startup
+2026-11-01T20:38:20Z s=97c0601e FINDING scripts/e2e/browser.mjs library block learn=test: output/e2e-browser.json
+2026-11-01T20:38:20Z s=97c0601e FINDING make bench run overlapped by the Stop hook's make verify learn=memory: .vae/MEMORY.md line: run make bench in the foreground
+2026-11-01T20:38:20Z s=97c0601e FINDING scripts/lib/bench-page.ts note learn=test: bench-page.test.ts expects 'Firefox and WebKit count whole milliseconds.'
