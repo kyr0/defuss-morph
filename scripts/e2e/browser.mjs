@@ -94,17 +94,49 @@ try {
   }), `${shown.length} figures`);
 
   const verdict = () => page.textContent('#verdict');
-  // keyed list, morph(): a typed note and focus survive the reorder
+  const applied = () => page.waitForFunction(() => !document.getElementById('apply').disabled && document.getElementById('st-kept').textContent !== '0');
+
+  // Apply runs exactly the editor's markup and leaves it there: no prepared state is applied or loaded behind
+  // the user's back (it once was, on every click)
+  const start = await page.inputValue('#next-html');
+  check('docs: the editor starts with the stage markup', start.includes('key="bread"') && (await page.textContent('#stage')).includes('Bread'));
+  const edited = start.replace('>Bread<', '>Butter<');
+  await page.fill('#next-html', edited);
+  await page.click('#apply');
+  await applied();
+  check('docs: Apply runs exactly the edited markup', (await page.textContent('#stage')).includes('Butter') && await page.inputValue('#next-html') === edited);
+  await page.click('#apply');
+  await applied();
+  check('docs: applying the same markup again changes nothing', await page.textContent('#st-created') === '0' && await page.textContent('#st-removed') === '0' && await page.inputValue('#next-html') === edited);
+
+  // keyed list, morph(): a typed note and focus survive the example reorder
+  await page.click('#reset');
   await page.fill('[aria-label="Milk note"]', 'two litres');
+  await page.click('#example');
+  check('docs: Example edit only fills the editor', (await page.inputValue('#next-html')).includes('key="coffee"') && !(await page.textContent('#stage')).includes('Coffee'));
   await page.click('#apply');
   await page.waitForFunction(() => document.getElementById('verdict').textContent.includes('fields you changed'));
   check('docs: morph() keeps typed input in a keyed reorder', (await verdict()).includes('1 of 1 fields you changed kept your input'), await verdict());
   check('docs: the note moved with its item', await page.inputValue('[aria-label="Milk note"]') === 'two litres');
 
+  // keyed list, morph(): the item you type in is itself moved (Eggs goes first) and keeps focus and caret
+  await page.click('#reset');
+  await page.click('[aria-label="Eggs note"]');
+  await page.keyboard.type('six');
+  await page.click('#example');
+  await page.click('#apply');
+  await page.waitForFunction(() => document.getElementById('verdict').textContent.includes('fields you changed'));
+  check('docs: morph() keeps focus in a moved item', (await verdict()).includes('still has focus')
+    && await page.evaluate(() => document.activeElement?.getAttribute('aria-label')) === 'Eggs note'
+    && (await page.$$eval('#stage li', (els) => els.map((el) => el.getAttribute('key'))))[0] === 'eggs', await verdict());
+  await page.keyboard.type('!');
+  check('docs: typing continues in the moved field', await page.inputValue('[aria-label="Eggs note"]') === 'six!');
+
   // keyed list, innerHTML: the same input is lost
   await page.click('[data-engine="innerHTML"]');
   await page.click('#reset');
   await page.fill('[aria-label="Milk note"]', 'two litres');
+  await page.click('#example');
   await page.click('#apply');
   await page.waitForFunction(() => document.getElementById('verdict').textContent.includes('fields you changed'));
   check('docs: innerHTML loses the same input', (await verdict()).includes('0 of 1 fields you changed'), await verdict());
@@ -123,6 +155,7 @@ try {
   await page.check('#f-news');
   await page.selectOption('#f-plan', 'Team');
   await page.focus('#f-name');
+  await page.click('#example');
   await page.click('#apply');
   await page.waitForFunction(() => document.getElementById('verdict').textContent.includes('fields you changed'));
   check('docs: morph() keeps form state', (await verdict()).includes('3 of 3 fields you changed kept your input'), await verdict());
@@ -133,6 +166,7 @@ try {
   await page.focus('[data-scenario="form"]');
   await page.keyboard.press('ArrowRight');
   check('docs: arrow keys switch the scenario tab', await choice() === 'diff morph' && (await page.textContent('#stage')).includes('deploy'), await choice());
+  await page.click('#example');
   await page.click('#apply');
   await page.waitForFunction(() => document.getElementById('st-kept').textContent !== '0');
   const jobs = await page.$$eval('#stage li', (els) => els.map((el) => `${el.textContent}`));
@@ -141,6 +175,7 @@ try {
   // transition: the awaited morph ends on the next card
   await page.click('[data-scenario="transition"]');
   await page.selectOption('#transition-type', 'slide-left');
+  await page.click('#example');
   await page.click('#apply');
   await page.waitForFunction(() => !document.getElementById('apply').disabled);
   check('docs: a transition morph ends on the next state', (await page.textContent('#stage h4')) === 'Step 2 of 3');

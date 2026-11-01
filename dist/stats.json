@@ -3,20 +3,20 @@
   "version": "0.2.0",
   "files": {
     "dist/index.mjs": {
-      "bytes": 39905,
-      "gzip": 9811
+      "bytes": 40762,
+      "gzip": 10061
     },
     "dist/index.cjs": {
-      "bytes": 41017,
-      "gzip": 9964
+      "bytes": 41874,
+      "gzip": 10208
     },
     "dist/all.js": {
-      "bytes": 41504,
-      "gzip": 10088
+      "bytes": 42368,
+      "gzip": 10342
     },
     "dist/all.min.js": {
-      "bytes": 19195,
-      "gzip": 7019
+      "bytes": 19630,
+      "gzip": 7176
     }
   }
 }

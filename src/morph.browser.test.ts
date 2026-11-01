@@ -116,6 +116,35 @@ describe("morph(el, html) — browser e2e", () => {
     expect(el.querySelector("label")!.textContent).toContain("Renamed");
   });
 
+  // regression: insertBefore() removes a node before inserting it, and the removal blurred a focused input inside
+  // a moved keyed item (VERIFIED in Chromium: the website playground lost focus on every reorder that moved it)
+  const focusedItemMoves = (withoutMoveBefore: boolean) => {
+    const item = (key: string) => `<li key="${key}"><input aria-label="${key}"></li>`;
+    const el = container(`<ul>${item("a")}${item("b")}${item("c")}</ul>`);
+    const list = el.querySelector("ul")!;
+    // an older browser: no moveBefore() on the list, so the insertBefore() path runs
+    if (withoutMoveBefore) Object.defineProperty(list, "moveBefore", { value: undefined });
+    const input = el.querySelector(`[aria-label="c"]`) as HTMLInputElement;
+    input.value = "hello";
+    input.focus();
+    input.setSelectionRange(1, 3, "backward");
+
+    morph(el, `<ul>${item("c")}${item("a")}${item("b")}</ul>`);
+
+    expect(list.firstElementChild!.contains(input)).toBe(true); // c moved to the front
+    expect(document.activeElement).toBe(input);
+    expect([input.value, input.selectionStart, input.selectionEnd, input.selectionDirection]).toEqual(["hello", 1, 3, "backward"]);
+  };
+
+  it("keeps focus and the selection in a moved node (moveBefore)", () => {
+    expect(typeof (Element.prototype as { moveBefore?: unknown }).moveBefore).toBe("function");
+    focusedItemMoves(false);
+  });
+
+  it("keeps focus and the selection in a moved node without moveBefore", () => {
+    focusedItemMoves(true);
+  });
+
   it("morphs shadow roots of plain elements and light DOM of custom elements", () => {
     class MyCard extends HTMLElement {
       constructor() {

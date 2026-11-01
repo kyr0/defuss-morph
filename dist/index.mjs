@@ -833,6 +833,33 @@ function morphDiff(targetRoot, patchItems, globals) {
     }
   }
 }
+function moveNode(parent, node, anchor) {
+  if (typeof parent.moveBefore === "function") {
+    try {
+      parent.moveBefore(node, anchor);
+      return;
+    } catch {
+    }
+  }
+  const doc = node.ownerDocument;
+  const active = doc?.activeElement;
+  const holdsFocus = !!active && active !== doc.body && node.contains(active);
+  let selection;
+  if (holdsFocus) {
+    try {
+      if (active.selectionStart !== null && active.selectionStart !== void 0) {
+        selection = [active.selectionStart, active.selectionEnd ?? active.selectionStart, active.selectionDirection ?? "none"];
+      }
+    } catch {
+      selection = void 0;
+    }
+  }
+  parent.insertBefore(node, anchor);
+  if (holdsFocus && active.isConnected && doc.activeElement !== active) {
+    active.focus({ preventScroll: true });
+    if (selection) active.setSelectionRange(...selection);
+  }
+}
 function morphDomDirect(parentElement, newVDOM, globals, mode = "replace") {
   const el = parentElement;
   const isCustomElement = el.tagName.includes("-");
@@ -891,7 +918,7 @@ function morphDomDirect(parentElement, newVDOM, globals, mode = "replace") {
     const anchor = targetRoot.childNodes[domIndex] ?? null;
     if (match) {
       if (match !== anchor) {
-        targetRoot.insertBefore(match, anchor);
+        moveNode(targetRoot, match, anchor);
       }
       morphNode(match, child, globals);
       domIndex++;

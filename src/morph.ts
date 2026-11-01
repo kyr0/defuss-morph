@@ -685,6 +685,50 @@ function morphDiff(
   }
 }
 
+type MoveParent = ParentNode & Node & { moveBefore?: (node: Node, child: Node | null) => void };
+
+/**
+ * Moves `node` (a child of `parent`) before `anchor`. insertBefore() removes the node before inserting it, and the
+ * removal blurs a focused element inside it (VERIFIED in Chromium: morph.browser.test.ts). moveBefore() moves
+ * atomically and keeps focus, the selection and other live state (iframes, animations), so it is used where the
+ * platform has it. Elsewhere, or when it refuses the move, insertBefore() runs and focus and the text selection
+ * are put back; state only moveBefore() keeps, such as a playing iframe, restarts there.
+ */
+function moveNode(parent: MoveParent, node: Node, anchor: Node | null): void {
+  if (typeof parent.moveBefore === "function") {
+    try {
+      parent.moveBefore(node, anchor);
+      return;
+    } catch {
+      // VERIFIED: Chromium 156 moves children of connected and detached trees, shadow roots and parsed documents
+      // without throwing. HYPOTHESIS: an engine that requires both nodes to be connected throws for detached trees;
+      // insertBefore() takes over then
+    }
+  }
+
+  const doc = node.ownerDocument;
+  const active = doc?.activeElement as HTMLInputElement | null | undefined;
+  const holdsFocus = !!active && active !== doc!.body && node.contains(active);
+  // selectionStart throws or is null for inputs without a text selection (checkbox, number, ...)
+  let selection: [number, number, "forward" | "backward" | "none"] | undefined;
+  if (holdsFocus) {
+    try {
+      if (active.selectionStart !== null && active.selectionStart !== undefined) {
+        selection = [active.selectionStart, active.selectionEnd ?? active.selectionStart, active.selectionDirection ?? "none"];
+      }
+    } catch {
+      selection = undefined;
+    }
+  }
+
+  parent.insertBefore(node, anchor);
+
+  if (holdsFocus && active.isConnected && doc!.activeElement !== active) {
+    active.focus({ preventScroll: true });
+    if (selection) active.setSelectionRange(...selection);
+  }
+}
+
 /********************************************************
  * 7) Raw morph implementation (key/id aware, move-not-replace)
  *    Called directly by the guard and by internal recursive
@@ -775,9 +819,9 @@ function morphDomDirect(
     const anchor = targetRoot.childNodes[domIndex] ?? null;
 
     if (match) {
-      // move node into place (preserves identity/state)
+      // move node into place (preserves identity, focus and state)
       if (match !== anchor) {
-        targetRoot.insertBefore(match, anchor);
+        moveNode(targetRoot, match, anchor);
       }
 
       // a replacement by morphNode happens in place, so domIndex stays valid

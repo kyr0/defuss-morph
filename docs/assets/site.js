@@ -62,8 +62,10 @@ $('copy-prompt').addEventListener('click', () => void copyText(
   $('copy-prompt-status'), $('copy-prompt').querySelector('span')));
 
 // ---- playground -----------------------------------------------------------------------------------------------------
-// Each scenario renders `initial` with innerHTML (reset), then cycles through `states`. The same markup goes to
-// morph() or to innerHTML, so the counters compare the two engines on identical input.
+// Reset renders a scenario's `initial` markup with innerHTML and puts the markup of the morph target into the editor
+// (`start`, for the change-set scenario the list's items). Apply sends exactly the editor's text to morph() or to
+// innerHTML, so the counters compare the two engines on identical input, and leaves the text there. "Example edit"
+// only fills the editor with the next of the scenario's prepared `states`; nothing changes until Apply.
 const job = (key, state) =>
   `<li key="${key}" data-state="${state}"><span class="dm-item-name">${key}</span><span class="badge" data-variant="${state === 'failed' ? 'destructive' : 'secondary'}">${state}</span></li>`;
 const item = (key, label, extra = '') =>
@@ -80,7 +82,7 @@ const card = (step, text) => `<div class="dm-card"><h4>Step ${step} of 3</h4><p>
 
 const SCENARIOS = {
   list: {
-    desc: 'Three items, each with a key. Write a note next to Milk and tick a box, then apply: the list is reordered, Bread is removed and Coffee is added. morph() moves Milk together with your note; innerHTML rebuilds every item and your note is gone.',
+    desc: 'Three items, each with a key. Write a note next to Milk and tick a box, then reorder the lines in the markup, delete one or rename an item, and apply. morph() moves Milk together with your note; innerHTML rebuilds every item and your note is gone.',
     initial: ['<ul>', item('milk', 'Milk'), item('bread', 'Bread'), item('eggs', 'Eggs'), '</ul>'].join('\n'),
     states: [
       ['<ul>', item('eggs', 'Eggs'), item('milk', 'Milk'), item('coffee', 'Coffee'), '</ul>'].join('\n'),
@@ -89,7 +91,7 @@ const SCENARIOS = {
     ],
   },
   form: {
-    desc: 'The labels and the status badge change with every state, the fields do not. Type a name, tick the box, pick a plan, then apply. The markup declares no value, so morph() leaves your input alone; innerHTML resets every field.',
+    desc: 'Type a name, tick the box and pick a plan, then change a label or the badge text in the markup and apply. The markup declares no value, so morph() leaves your input alone; innerHTML resets every field.',
     initial: form('Draft', 'Name', 'Send me the newsletter'),
     states: [
       form('Saved a moment ago', 'Full name', 'Send me the monthly newsletter'),
@@ -98,11 +100,12 @@ const SCENARIOS = {
     ],
   },
   diff: {
-    desc: 'A job list fed by change-sets, the way a stream or an AI agent sends updates. Each state names only the jobs that changed, by key, and morph() is called with { diff: true } on the list. innerHTML can only put the change-set in place of the whole list, so every job it does not name disappears.',
+    desc: 'The markup is a change-set for a job list, the way a stream or an AI agent sends updates. morph() is called with { diff: true } on the list: it patches the jobs the markup names by key and leaves the others alone, so delete the lines of jobs you do not change. innerHTML can only replace the whole list, so every job the markup does not name disappears.',
     target: (stage) => stage.querySelector('ul'),
     targetName: 'jobs',
     options: { diff: true },
     initial: ['<ul>', job('build', 'running'), job('test', 'queued'), job('deploy', 'queued'), '</ul>'].join('\n'),
+    start: [job('build', 'running'), job('test', 'queued'), job('deploy', 'queued')].join('\n'),
     states: [
       [job('build', 'done'), job('test', 'running')].join('\n'),
       [job('test', 'failed'), job('retry', 'running')].join('\n'),
@@ -110,7 +113,7 @@ const SCENARIOS = {
     ],
   },
   transition: {
-    desc: 'A card swapped with an animation. morph() returns a Promise when a transition is set, and the counters cover the whole transition. Choose the type next to the engine switch.',
+    desc: 'A card swapped with an animation: edit its text and apply. morph() returns a Promise when a transition is set, and the counters cover the whole transition. Choose the type next to the engine switch.',
     transition: true,
     initial: card(1, 'Choose a transition type, then apply.'),
     states: [
@@ -163,12 +166,12 @@ function describeCall() {
 function render() {
   $('scenario-desc').textContent = scenario().desc;
   $('transition-field').hidden = !scenario().transition;
-  next.value = scenario().states[play.step];
   paint();
 }
 
 function reset() {
   stage.innerHTML = scenario().initial;
+  next.value = scenario().start ?? scenario().initial;
   play.step = 0;
   for (const id of ['st-kept', 'st-created', 'st-removed', 'st-attrs', 'st-text']) {
     $(id).textContent = '0';
@@ -230,8 +233,6 @@ async function apply() {
       for (const el of created) el.animate([{ boxShadow: `0 0 0 2px ${ring}` }, { boxShadow: '0 0 0 2px transparent' }], { duration: 1200, easing: 'ease-out' });
     }
 
-    play.step = (play.step + 1) % s.states.length;
-    render();
   } finally {
     play.busy = false;
     $('apply').disabled = false;
@@ -257,8 +258,14 @@ $('engines').parentElement.addEventListener('click', (event) => {
   paint();
 });
 $('transition-type').addEventListener('change', paint);
-// a mouse click on Apply must not move focus out of the stage: keeping focus is one of the things being shown
-$('apply').addEventListener('mousedown', (event) => event.preventDefault());
+// a mouse click on Apply or Example edit must not move focus out of the stage: keeping focus is one of the things shown
+for (const id of ['apply', 'example']) $(id).addEventListener('mousedown', (event) => event.preventDefault());
 $('apply').addEventListener('click', () => void apply());
+$('example').addEventListener('click', () => {
+  const states = scenario().states;
+  next.value = states[play.step];
+  play.step = (play.step + 1) % states.length;
+  paint();
+});
 $('reset').addEventListener('click', reset);
 reset();

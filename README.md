@@ -108,7 +108,7 @@ morph(el: Element, newContent: RenderInput, options?: MorphOptions): void | Prom
 Makes the children of `el` match `newContent`: an HTML string, a VNode, an array of VNodes or plain text. Without a `transition` option the morph is synchronous and returns `undefined`; with one it returns a Promise that resolves when the transition has finished.
 
 - HTML strings are parsed with the `DOMParser` of the element's own document (`el.ownerDocument`), so the call works in a browser, in happy-dom and across windows. Fragments are parsed in template mode, so context-dependent tags such as `<tr>`, `<td>` and `<option>` survive at the top level.
-- Children are matched by `key`, then by `id`, then by tag. A matched node is moved with `insertBefore` and patched in place; a child without a match is created; unclaimed nodes are removed.
+- Children are matched by `key`, then by `id`, then by tag. A matched node is moved with `moveBefore()`, which keeps focus, the selection and other live state (where the browser lacks it, `insertBefore()` moves it and `morph()` puts focus and the text selection back), and patched in place; a child without a match is created; unclaimed nodes are removed.
 - The `key` is stored on the element for matching and is not written to the DOM as an attribute.
 - An element with an open shadow root is morphed inside the shadow root. Custom elements (a hyphen in the tag name) keep their light DOM as the target, for slotted content.
 - Native listeners added with `addEventListener` stay on surviving nodes. An HTML string cannot declare handlers, so registered JSX handlers stay as well, the same rule as for uncontrolled form state.
@@ -266,10 +266,10 @@ Zero-build pages that load the freshly built `dist/all.js`. `make start` serves 
 <!-- bundle-size:start -->
 | File | Size | Gzipped | Purpose |
 | --- | ---: | ---: | --- |
-| `index.mjs` | 39.0 kB | 9.6 kB | ESM/library build; used when installing via npm/bun |
-| `index.cjs` | 40.1 kB | 9.7 kB | CommonJS build |
-| `all.js` | 40.5 kB | 9.9 kB | Self-contained ESM bundle for CDN and `<script>` use, readable for debugging; registers `df$` |
-| `all.min.js` | 18.7 kB | **6.9 kB** | Minified `all.js`; the file to load from a CDN when no bundler is used |
+| `index.mjs` | 39.8 kB | 9.8 kB | ESM/library build; used when installing via npm/bun |
+| `index.cjs` | 40.9 kB | 10.0 kB | CommonJS build |
+| `all.js` | 41.4 kB | 10.1 kB | Self-contained ESM bundle for CDN and `<script>` use, readable for debugging; registers `df$` |
+| `all.min.js` | 19.2 kB | **7.0 kB** | Minified `all.js`; the file to load from a CDN when no bundler is used |
 <!-- bundle-size:end -->
 
 `index.cjs` serves `require()` on older toolchains (CommonJS Jest configurations, bundlers that resolve `main`). Node 20.19 and 22.12 or newer can `require()` the ESM build directly.

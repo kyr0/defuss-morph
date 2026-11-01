@@ -110,7 +110,7 @@
     <div class="parallax-content">
       <section class="mk-hero" style="width:100%">
         <div class="mk-hero-copy">
-          <a class="mk-hero-pill" href="#numbers"><span class="badge" data-variant="default" data-size="sm">v0.2.0</span>Zero dependencies · <span data-stat="all.min.js:gzip">6.9 kB</span> gzip · any framework or none <svg class="dm-icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="mk-hero-pill" href="#numbers"><span class="badge" data-variant="default" data-size="sm">v0.2.0</span>Zero dependencies · <span data-stat="all.min.js:gzip">7.0 kB</span> gzip · any framework or none <svg class="dm-icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           <h1 class="mk-hero-title">Re-render with <strong>plain HTML</strong> or JSX, and the page</h1>
           <p class="dm-flip"><span class="text-rotate"><span>
               <span class="dm-accent">keeps focus and selection</span>
@@ -131,7 +131,7 @@
         <section class="dm-intro-item" aria-labelledby="intro-1">
           <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-move"/></svg></span>
           <h3 id="intro-1">Move, never rebuild</h3>
-          <p>Children are matched by <code>key</code>, then by <code>id</code>, then by tag. A matched node is <strong>moved</strong> with <code>insertBefore</code> and patched in place, so its identity, focus and scroll position survive.</p>
+          <p>Children are matched by <code>key</code>, then by <code>id</code>, then by tag. A matched node is <strong>moved</strong> with <code>moveBefore()</code> and patched in place, so its identity, focus and caret survive.</p>
         </section>
         <section class="dm-intro-item" aria-labelledby="intro-2">
           <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-cursor"/></svg></span>
@@ -156,7 +156,7 @@
         <section class="dm-intro-item" aria-labelledby="intro-6">
           <span class="dm-intro-icon" aria-hidden="true"><svg class="dm-icon"><use href="#i-feather"/></svg></span>
           <h3 id="intro-6">One file, no build step</h3>
-          <p>One <code>&lt;script type="module"&gt;</code> tag loads <strong><span data-stat="all.min.js:gzip">6.9 kB</span> gzip</strong> and exposes the API as <code>window.df$</code>. Bundlers get side-effect-free ESM and CommonJS builds with type declarations.</p>
+          <p>One <code>&lt;script type="module"&gt;</code> tag loads <strong><span data-stat="all.min.js:gzip">7.0 kB</span> gzip</strong> and exposes the API as <code>window.df$</code>. Bundlers get side-effect-free ESM and CommonJS builds with type declarations.</p>
         </section>
       </div>
     </div>
@@ -167,7 +167,7 @@
       <div class="mk-section-header-copy">
         <span class="mk-section-header-eyebrow">Live demo</span>
         <h2 class="mk-section-header-title" id="demo-title">Morph against innerHTML, on the same markup</h2>
-        <p class="mk-section-header-desc">Type into the inputs on the stage, tick a box, leave the cursor in a field, then apply the next state. A MutationObserver counts what each engine did to the DOM. <code>morph()</code> runs the copy of the built library this site serves; <code>innerHTML</code> is the baseline that rebuilds everything.</p>
+        <p class="mk-section-header-desc">Type into the inputs on the stage, tick a box, leave the cursor in a field. Then edit the markup and apply it, or load an example edit first. A MutationObserver counts what each engine did to the DOM. <code>morph()</code> runs the copy of the built library this site serves; <code>innerHTML</code> is the baseline that rebuilds everything.</p>
       </div>
     </header>
     <div class="dm-play card">
@@ -192,7 +192,7 @@
               </select>
             </label>
           </div>
-          <label class="label" for="next-html">Next state <span class="label-hint">(edit it before applying)</span></label>
+          <label class="label" for="next-html">Next state <span class="label-hint">(Apply runs exactly this markup)</span></label>
           <div class="dm-code">
             <div class="dm-editor" id="next-editor">
               <pre class="dm-editor-paint" aria-hidden="true"><code id="next-paint"></code></pre>
@@ -202,6 +202,7 @@
           </div>
           <div class="dm-row">
             <button type="button" class="btn" id="apply"><svg class="dm-icon" aria-hidden="true"><use href="#i-play"/></svg>Apply next state</button>
+            <button type="button" class="btn" data-variant="outline" id="example"><svg class="dm-icon" aria-hidden="true"><use href="#i-patch"/></svg>Example edit</button>
             <button type="button" class="btn" data-variant="ghost" id="reset"><svg class="dm-icon" aria-hidden="true"><use href="#i-reload"/></svg>Reset</button>
           </div>
         </div>
@@ -237,7 +238,7 @@
           <div class="diagram-node" data-node="normalize" style="--col:3;--row:1"><span class="diagram-node-eyebrow">Children</span><span class="diagram-node-name">Normalize</span><span class="diagram-node-meta">flatten fragments, join text</span></div>
           <div class="diagram-node" data-node="match" data-shape="diamond" style="--col:4;--row:1"><span class="diagram-node-name">Match found?</span></div>
           <div class="diagram-node" data-node="create" data-tone="warn" style="--col:5;--row:1"><span class="diagram-node-name">Create</span><span class="diagram-node-meta">insert, run onMount</span></div>
-          <div class="diagram-node" data-node="move" data-tone="accent" style="--col:4;--row:2"><span class="diagram-node-eyebrow">Same node</span><span class="diagram-node-name">Move into place</span><span class="diagram-node-meta">insertBefore keeps identity</span></div>
+          <div class="diagram-node" data-node="move" data-tone="accent" style="--col:4;--row:2"><span class="diagram-node-eyebrow">Same node</span><span class="diagram-node-name">Move into place</span><span class="diagram-node-meta">moveBefore keeps identity</span></div>
           <div class="diagram-node" data-node="patch" style="--col:3;--row:2"><span class="diagram-node-eyebrow">In place</span><span class="diagram-node-name">Patch attributes</span><span class="diagram-node-meta">form state and handlers kept</span></div>
           <div class="diagram-node" data-node="recurse" style="--col:2;--row:2"><span class="diagram-node-name">Recurse into children</span></div>
           <div class="diagram-node" data-node="cleanup" data-tone="warn" style="--col:2;--row:3"><span class="diagram-node-eyebrow">Leftovers</span><span class="diagram-node-name">Remove unclaimed</span><span class="diagram-node-meta">handlers torn down first</span></div>
@@ -262,7 +263,7 @@
         <h3 class="dm-subtitle">What survives a morph</h3>
         <ul class="dm-keeps">
           <li class="dm-keep"><h4>Node identity</h4><p>A matched node is the same object afterwards. References you hold, <code>WeakMap</code> entries and third-party widgets attached to it stay valid.</p></li>
-          <li class="dm-keep"><h4>Focus and selection</h4><p>Moving a node with <code>insertBefore</code> keeps it in the document, so a focused input stays focused and keeps its caret.</p></li>
+          <li class="dm-keep"><h4>Focus and selection</h4><p>A node is moved with <code>moveBefore()</code>, which keeps a focused input focused with its caret. Browsers without it get <code>insertBefore()</code>, after which morph puts focus and the selection back.</p></li>
           <li class="dm-keep"><h4>Uncontrolled form state</h4><p>Markup without <code>value</code> or <code>checked</code> leaves the live state alone. Markup that declares them, or a VNode with <code>checked: false</code>, sets it.</p></li>
           <li class="dm-keep"><h4>Event listeners</h4><p>Listeners you added with <code>addEventListener</code> stay on surviving nodes. An HTML string cannot declare handlers, so registered JSX handlers stay too.</p></li>
           <li class="dm-keep"><h4>Comments</h4><p>HTML comments are matched and patched like text, so <code>morph(el, el.innerHTML)</code> changes no node.</p></li>
@@ -427,7 +428,7 @@
             <p class="mk-stats-desc">The sizes below are written into this page by <code>make build</code> from the files it just built (<code>dist/stats.json</code>), and the build fails while this page shows other numbers.</p>
           </div>
           <div class="mk-stats-grid">
-            <div class="mk-stat"><span class="mk-stat-value"><span data-stat="all.min.js:gzip">6.9 kB</span> <span class="badge" data-variant="secondary" data-size="sm">gzip</span></span><span class="mk-stat-label"><code>all.min.js</code>, the one-file CDN build (<span data-stat="all.min.js:bytes">18.7 kB</span> raw)</span></div>
+            <div class="mk-stat"><span class="mk-stat-value"><span data-stat="all.min.js:gzip">7.0 kB</span> <span class="badge" data-variant="secondary" data-size="sm">gzip</span></span><span class="mk-stat-label"><code>all.min.js</code>, the one-file CDN build (<span data-stat="all.min.js:bytes">19.2 kB</span> raw)</span></div>
             <div class="mk-stat"><span class="mk-stat-value">0</span><span class="mk-stat-label">runtime or peer dependencies</span></div>
             <div class="mk-stat"><span class="mk-stat-value">2</span><span class="mk-stat-label">test environments: every test file runs in real Chromium, and all but the browser-only ones also in happy-dom</span><a href="https://github.com/kyr0/defuss-morph/blob/main/vitest.config.ts" class="btn mk-stat-link" data-variant="link" data-size="default">The test setup</a></div>
             <div class="mk-stat"><span class="mk-stat-value">4</span><span class="mk-stat-label">builds: ESM and CommonJS for bundlers and Node, readable and minified bundles for the CDN</span></div>
@@ -436,10 +437,10 @@
         <figure class="mk-stats-media dm-metrics">
           <div class="mockup-code" data-chrome="mac" data-title="defuss-morph · dist/">
             <pre data-prefix="$"><code>make build</code></pre>
-            <pre data-prefix=""><code>index.mjs   <span data-stat="index.mjs:bytes">39.0 kB</span>  <span data-stat="index.mjs:gzip">9.6 kB</span> gzip</code></pre>
-            <pre data-prefix=""><code>index.cjs   <span data-stat="index.cjs:bytes">40.1 kB</span>  <span data-stat="index.cjs:gzip">9.7 kB</span> gzip</code></pre>
-            <pre data-prefix=""><code>all.js      <span data-stat="all.js:bytes">40.5 kB</span>  <span data-stat="all.js:gzip">9.9 kB</span> gzip</code></pre>
-            <pre data-prefix="" data-tone="success"><code>all.min.js  <span data-stat="all.min.js:bytes">18.7 kB</span>  <span data-stat="all.min.js:gzip">6.9 kB</span> gzip</code></pre>
+            <pre data-prefix=""><code>index.mjs   <span data-stat="index.mjs:bytes">39.8 kB</span>  <span data-stat="index.mjs:gzip">9.8 kB</span> gzip</code></pre>
+            <pre data-prefix=""><code>index.cjs   <span data-stat="index.cjs:bytes">40.9 kB</span>  <span data-stat="index.cjs:gzip">10.0 kB</span> gzip</code></pre>
+            <pre data-prefix=""><code>all.js      <span data-stat="all.js:bytes">41.4 kB</span>  <span data-stat="all.js:gzip">10.1 kB</span> gzip</code></pre>
+            <pre data-prefix="" data-tone="success"><code>all.min.js  <span data-stat="all.min.js:bytes">19.2 kB</span>  <span data-stat="all.min.js:gzip">7.0 kB</span> gzip</code></pre>
           </div>
           <figcaption class="dm-figcaption">gzip at Node's default level; kB here means 1,024 bytes.</figcaption>
         </figure>
@@ -491,7 +492,7 @@
         </figure>
         <div class="dm-download">
           <a class="btn" data-variant="outline" href="assets/defuss-morph.min.js" download="defuss-morph.min.js"><svg class="dm-icon" aria-hidden="true"><use href="#i-download"/></svg>defuss-morph.min.js</a>
-          <span class="badge" data-variant="outline"><span data-stat="all.min.js:bytes">18.7 kB</span> · ESM · this build</span>
+          <span class="badge" data-variant="outline"><span data-stat="all.min.js:bytes">19.2 kB</span> · ESM · this build</span>
         </div>
       </div>
     </div>
