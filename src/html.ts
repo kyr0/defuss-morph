@@ -108,17 +108,25 @@ export function getMimeType(
 }
 
 /**
+ * The content fragment of a `<template>` element, where the parser puts its markup; `undefined` for other elements.
+ * morph reads, creates and patches a template's children there, so markup such as defuss-i18n's translation
+ * templates survives a morph.
+ */
+export const templateContent = (element: Element): DocumentFragment | undefined =>
+  element.localName === "template" ? (element as HTMLTemplateElement).content : undefined;
+
+/**
  * Converts a DOM node to a VNode structure for use with updateDomWithVdom.
  * This allows us to leverage the sophisticated partial update system even for Node inputs.
  */
 export function domNodeToVNode(node: Node): VNode<VNodeAttributes> | string {
   if (node.nodeType === 3 /* Node.TEXT_NODE */) {
-    return node.textContent || "";
+    return node.nodeValue || "";
   }
 
   if (node.nodeType === 1 /* Node.ELEMENT_NODE */) {
     const element = node as Element;
-    const attributes: VNodeAttributes = {};
+    const attributes: VNodeAttributes & { [FROM_DOM_MARKER]?: true } = {};
 
     // Convert DOM attributes to VNode attributes
     for (let i = 0; i < element.attributes.length; i++) {
@@ -126,18 +134,17 @@ export function domNodeToVNode(node: Node): VNode<VNodeAttributes> | string {
       attributes[attr.name] = domAttributeToVNodeValue(attr);
     }
 
-    // Convert child nodes recursively
+    // Convert child nodes recursively; a <template> keeps its markup in .content, not in childNodes
+    // (VERIFIED: reading childNodes turned `<template><b>x</b></template>` into an empty template)
     const children: Array<VNode<VNodeAttributes> | string> = [];
-    for (let i = 0; i < element.childNodes.length; i++) {
-      const childVNode = domNodeToVNode(element.childNodes[i]);
-      children.push(childVNode);
+    for (let child = (templateContent(element) ?? element).firstChild; child; child = child.nextSibling) {
+      children.push(domNodeToVNode(child));
     }
+    attributes[FROM_DOM_MARKER] = true;
 
-    return {
-      type: element.tagName.toLowerCase(),
-      attributes: { ...attributes, [FROM_DOM_MARKER]: true },
-      children,
-    };
+    // localName is the name the parser gave the element: lowercase for HTML, camelCase where SVG has it
+    // (VERIFIED: tagName.toLowerCase() turned linearGradient into an unknown "lineargradient", morph.test.ts)
+    return { type: element.localName, attributes, children };
   }
 
   if (node.nodeType === 8 /* Node.COMMENT_NODE */) {
@@ -147,6 +154,13 @@ export function domNodeToVNode(node: Node): VNode<VNodeAttributes> | string {
   // For other node types (processing instructions, etc.), convert to empty string
   return "";
 }
+
+/**
+ * One inert document per DOMParser, which creates the <template> each fragment parses into. VERIFIED (A/B in
+ * Chromium, 2026-11-01): creating a document per call made 500 small re-renders take half again as long; the
+ * document only ever creates detached templates, so reusing it changes no result.
+ */
+const inertDocuments = new WeakMap<typeof DOMParser, Document>();
 
 /** Input starting (after optional comments) with doctype/html/head/body. */
 const DOCUMENT_START = /^\s*(?:<!--[\s\S]*?-->\s*)*<(?:!doctype|html|head|body)[\s>/]/i;
@@ -170,9 +184,12 @@ export function htmlStringToVNodes(
   // parser drops table tags, so `<tr><td>x</td></tr>` became the text "x", and a
   // leading comment without a <body> landed outside it and was lost. Template
   // content keeps both, and stays inert (no scripts run, nothing loads).
-  const template = new Parser()
-    .parseFromString("", "text/html")
-    .createElement("template");
+  let inert = inertDocuments.get(Parser);
+  if (!inert) {
+    inert = new Parser().parseFromString("", "text/html");
+    inertDocuments.set(Parser, inert);
+  }
+  const template = inert.createElement("template");
   template.innerHTML = html;
   return toVNodes(template.content.childNodes);
 }

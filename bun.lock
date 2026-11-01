@@ -9,6 +9,10 @@
         "@vitest/browser": "^5.0.0",
         "@vitest/browser-playwright": "^5.0.0",
         "@vitest/coverage-v8": "^5.0.0",
+        "defuss-dom-router": "0.1.1",
+        "defuss-i18n": "0.2.0",
+        "defuss-query": "0.2.0",
+        "defuss-store": "0.1.0",
         "happy-dom": "^20.5.0",
         "oxc-minify": "^0.149.0",
         "oxlint": "^1.81.0",
@@ -360,6 +364,16 @@
     "convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 
     "deepmerge": ["deepmerge@4.3.1", "", {}, "sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A=="],
+
+    "defuss-dom-router": ["defuss-dom-router@0.1.1", "", {}, "sha512-tpCqkNYX55TiGnEU2Kni9x6jZV4fksVRhZ5zDRH8CVHLMobknw7PNDKNUkMJ3g+98r7LmnZVxZqtO7dYcLRZ9A=="],
+
+    "defuss-i18n": ["defuss-i18n@0.2.0", "", { "peerDependencies": { "defuss-morph": "^0.1.1", "defuss-query": "^0.1.0" } }, "sha512-ppZRhF5g2E0umpoD3Fl+ZSrhv6U1hWK06muiUsFaoMqeTxn7AjhkmfKm3UQG9uq3nxNeRXHS41+p6F8fLuTKjA=="],
+
+    "defuss-morph": ["defuss-morph@0.2.0", "", {}, "sha512-QMzZL3zMB100dTycyE7NJ1ey7KE8iap7CpfXrZ+tXu+tzoWugVJdMPr7v7pm+ce8iPjLLaYgTqAUG9p35U9cKQ=="],
+
+    "defuss-query": ["defuss-query@0.2.0", "", { "peerDependencies": { "defuss-morph": "^0.2.0" } }, "sha512-S18fLhxZXS8WTRXBqy0EQ9FZnecF6v1KEiGAoONjCQjOiJ5GiBY2ejiU+L0BIdDUkS1KYGi8KGZ4suC6l7r6lQ=="],
+
+    "defuss-store": ["defuss-store@0.1.0", "", {}, "sha512-1FaR2bO8Zz8MyD95v1/+NXKcxsWarq3p1vazlwWfvW/JBWUcM/srvxNLFgFs2tUQh8bLLQUmYiZxCguTvLs85Q=="],
 
     "dequal": ["dequal@2.0.3", "", {}, "sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA=="],
 

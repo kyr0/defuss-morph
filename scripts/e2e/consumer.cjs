@@ -15,7 +15,10 @@ const log = (level, message) => console.log(`${new Date().toISOString()} ${level
   morphPkg.morph(app, `<p key="x">two</p>`);
   assert.equal(app.firstChild, p, "the keyed node is patched, not replaced");
   assert.equal(app.textContent, "two");
-  log("INFO", "pass require('defuss-morph') morphs with dist/index.cjs");
+  // the subpaths a JSX compiler requires resolve to the same CommonJS entry
+  assert.equal(require("defuss-morph/jsx-runtime").jsx, morphPkg.jsx);
+  assert.equal(require("defuss-morph/jsx-dev-runtime").jsxDEV, morphPkg.jsxDEV);
+  log("INFO", "pass require('defuss-morph') morphs with dist/index.cjs; jsx-runtime subpaths resolve to it");
 })().catch((error) => {
   log("ERROR", `FAIL ${error.message}`);
   process.exit(1);

@@ -370,6 +370,24 @@ describe("morph(el, html)", () => {
     expect(svg.getAttribute("viewBox")).toBe("0 0 20 20");
   });
 
+  // VERIFIED defect (Chromium, 2026-11-01): the HTML-string conversion lowercased every tag name, so linearGradient and
+  // clipPath became unknown SVG elements (plain SVGElement) and gradients and clip paths did not render
+  it("creates camelCase SVG elements from an HTML string under the names the parser gives them", () => {
+    const markup = (offset: number) =>
+      `<svg viewBox="0 0 10 10"><defs><linearGradient id="g"><stop offset="${offset}"></stop></linearGradient><clipPath id="c"><rect width="5" height="5"></rect></clipPath><foreignObject width="5" height="5"></foreignObject></defs></svg>`;
+    const names = (root: Element) => [...root.querySelector("defs")!.children].map((child) => child.localName);
+    const el = container();
+    morph(el, markup(0));
+
+    expect(names(el)).toEqual(names(container(markup(0))));
+    expect(names(el)).toEqual(["linearGradient", "clipPath", "foreignObject"]);
+
+    const gradient = el.querySelector("defs")!.firstElementChild;
+    morph(el, markup(1));
+    expect(el.querySelector("defs")!.firstElementChild).toBe(gradient);
+    expect(el.querySelector("stop")!.getAttribute("offset")).toBe("1");
+  });
+
   it("morphs plain text input as a text node", () => {
     const el = container(`<b>x</b>`);
     morph(el, "just text");

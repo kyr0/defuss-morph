@@ -35,4 +35,9 @@ if (typeof globalThis !== "undefined") {
     g.df$ = {};
   }
   Object.assign(g.df$ as Record<string, unknown>, api);
+  // loaded after defuss-query (or defuss-shadcn, which embeds it): its selections get .reactive() at once. In the
+  // other order df$.fn does not exist yet and the page calls df$.installReactive(df$) (VERIFIED: both orders in
+  // global.browser.test.ts, with defuss-query's real CDN bundle)
+  const fn = (g.df$ as { fn?: unknown }).fn;
+  if (typeof fn === "object" && fn !== null) api.installReactive(g.df$);
 }

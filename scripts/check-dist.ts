@@ -70,8 +70,12 @@ for (const name of ['updateDomWithVdom', 'replaceDomWithVdom', 'registerDelegate
     fail(`dist/all.js / all.min.js lost the public export name "${name}"`);
   }
 }
+// The registration assigns a df$ property (`g.df$ = …`, `Object.assign(g.df$, …)`); the entries may still name
+// df$ in text, e.g. installReactive(df$), which takes defuss-query's df$ as an argument. VERIFIED: it matches
+// dist/all.js and all.min.js and neither index entry (2026-11-01).
+const REGISTRATION = /\.df\$\s*=(?!=)|Object\.assign\(\s*[\w$]+\.df\$/;
 for (const rel of ['dist/index.mjs', 'dist/index.cjs']) {
-  if (readFileSync(join(ROOT, rel), 'utf8').includes('df$')) {
+  if (REGISTRATION.test(readFileSync(join(ROOT, rel), 'utf8'))) {
     fail(`${rel} must not contain the df$ global registration (SSR-safe library entry)`);
   }
 }

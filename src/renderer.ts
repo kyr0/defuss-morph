@@ -10,7 +10,7 @@ import {
   parseEventPropName,
   registerDelegatedEvent,
 } from "./delegated-events.js";
-import { isCommentVNode } from "./html.js";
+import { isCommentVNode, templateContent } from "./html.js";
 
 export const CLASS_ATTRIBUTE_NAME = "class";
 export const XLINK_ATTRIBUTE_NAME = "xlink";
@@ -103,7 +103,8 @@ export const handleLifecycleEventsForOnMount = (newEl: HTMLElement) => {
     observeUnmount(newEl, () => {
       // re-arm on a later re-insertion of the same node
       unmountObserved.delete(newEl);
-      (newEl as any).$onUnmount?.();
+      // the element, as UnmountHandler declares (it was called without one until 0.3.0)
+      (newEl as any).$onUnmount?.(newEl);
     });
   }
 };
@@ -205,7 +206,11 @@ export const getRenderer = (document: Document): DomAbstractionImpl => {
 
         // Skip child creation when dangerouslySetInnerHTML is used (matches React semantics)
         if (vNode.children && !vNode.attributes?.dangerouslySetInnerHTML) {
-          renderer.createChildElements(vNode.children, newEl as Element);
+          // a <template>'s children belong in its content fragment, as the HTML parser puts them
+          renderer.createChildElements(
+            vNode.children,
+            (templateContent(newEl) as unknown as Element | undefined) ?? newEl,
+          );
         }
       }
       // anything else (text, null, a plain object) is not an element: undefined

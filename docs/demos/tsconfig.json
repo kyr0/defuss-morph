@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "Type-checks the website demos (make lint) against the library source, as a user's project would check them.",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "jsx": "react-jsx",
+    "jsxImportSource": "defuss-morph",
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "paths": {
+      "defuss-morph": ["../../src/index.ts"],
+      "defuss-morph/jsx-runtime": ["../../src/index.ts"]
+    }
+  },
+  "include": ["*.ts", "*.tsx", "*.js"]
+}

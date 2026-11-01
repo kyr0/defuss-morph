@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>defuss-morph — JSX without a build step: h(), Reactive, refs</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-block: 1rem; }
+    code { background: #f4f4f4; padding: 0 4px; border-radius: 4px; }
+    button { margin-right: 0.5rem; }
+    .disclosure .body { margin-top: 0.5rem; padding: 0.5rem; background: #f6f6f6; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>JSX without a build step: <code>h()</code>, <code>&lt;Reactive&gt;</code>, refs</h1>
+  <p>
+    A JSX compiler turns <code>&lt;p class="x"&gt;Hi&lt;/p&gt;</code> into <code>jsx("p", { class: "x", children: "Hi" })</code>.
+    Without a compiler, <code>h("p", { class: "x" }, "Hi")</code> builds the same VNode, so every pattern below reads
+    like its JSX version, one call per tag.
+  </p>
+
+  <section>
+    <h2>1. <code>&lt;Reactive&gt;</code>: re-render on a store change</h2>
+    <div id="counter"></div>
+  </section>
+
+  <section>
+    <h2>2. Ref: reach the rendered element</h2>
+    <div id="ref"></div>
+  </section>
+
+  <section>
+    <h2>3. forwardRef: a parent controls a component through its ref</h2>
+    <div id="disclosure"></div>
+  </section>
+
+  <!-- Local: repo build. Production: https://cdn.jsdelivr.net/npm/defuss-morph@latest/dist/all.min.js -->
+  <script type="module" src="../dist/all.js"></script>
+  <script type="module">
+    import { createStore } from "https://cdn.jsdelivr.net/npm/defuss-store@0.1.0/dist/browser.min.js";
+
+    const { h, Reactive, createRef, morph } = window.df$;
+
+    // 1. <Reactive store={counter} render={() => …} /> as h(Reactive, { store, render })
+    const counter = createStore({ n: 0 });
+    morph(document.getElementById("counter"), h(Reactive, {
+      tag: "p",
+      store: counter,
+      render: () => [
+        h("button", { type: "button", id: "increment", onClick: () => counter.set("n", counter.value.n + 1) }, "+1"),
+        ` clicked ${counter.value.n} times`,
+      ],
+    }));
+
+    // 2. morph sets field.current to the element that carries ref: field
+    const field = createRef();
+    morph(document.getElementById("ref"), h("p", null,
+      h("input", { ref: field, id: "name", placeholder: "Your name", "aria-label": "Your name" }),
+      " ",
+      h("button", { type: "button", id: "focus", onClick: () => field.current.focus() }, "Focus the input")));
+
+    // 3. an optional ref prop with a default: the component puts its API (and state) on ref.state
+    const Disclosure = ({ title, ref = createRef(), children }) => {
+      const api = (ref.state ??= (() => {
+        const open = createStore({ open: false });
+        return { open, toggle: () => open.set("open", !open.value.open), close: () => open.set("open", false) };
+      })());
+      return h(Reactive, {
+        ref, tag: "div", class: "disclosure", store: api.open,
+        render: () => [
+          h("button", { type: "button", "aria-expanded": String(api.open.value.open), onClick: api.toggle }, title),
+          api.open.value.open ? h("div", { class: "body" }, children) : null,
+        ],
+      });
+    };
+
+    const faq = createRef();
+    morph(document.getElementById("disclosure"), h("div", null,
+      h(Disclosure, { title: "What does morph keep?", ref: faq }, "Every node that matches: its focus, typed input and listeners."),
+      h("p", null, h("button", { type: "button", id: "close", onClick: () => faq.state.close() }, "Close it from the parent"))));
+  </script>
+</body>
+</html>

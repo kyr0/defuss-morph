@@ -1,13 +1,13 @@
 {
   "name": "defuss-morph",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "packageManager": "bun@1.4.3",
   "publishConfig": {
     "access": "public"
   },
   "license": "MIT",
-  "description": "Morph an HTML string or JSX/VNodes into an existing DOM tree with native APIs: key/id-aware matching, move-not-replace, in-place attribute patching, form-state preservation and delegated event cleanup. Works with any framework or none, in the browser and on the server, without a virtual DOM or build step. Zero dependencies; written in TypeScript.",
+  "description": "Morph an HTML string or JSX/VNodes into an existing DOM tree with native APIs: key/id-aware matching, move-not-replace, in-place attribute patching, form-state preservation and delegated event cleanup. Store-driven reactive rendering (reactive(), <Reactive>), refs and a JSX runtime on top. Works with any framework or none, in the browser and on the server, without a virtual DOM or build step. Zero dependencies; written in TypeScript.",
   "keywords": [
     "dom",
     "morph",
@@ -39,8 +39,8 @@
     "stats": "bun scripts/stats.ts",
     "docs": "bun scripts/docs.ts",
     "check:dist": "bun scripts/check-dist.ts",
-    "lint": "oxlint --deny-warnings --ignore-pattern 'docs/assets/defuss-morph.*' --ignore-pattern docs/assets/shiki.js src scripts docs/assets",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false -p tsconfig.json",
+    "lint": "oxlint --deny-warnings --ignore-pattern 'docs/assets/defuss-morph.*' --ignore-pattern docs/assets/shiki.js --ignore-pattern docs/assets/demos.js --ignore-pattern docs/assets/router-demo.js --ignore-pattern docs/assets/bench.js --ignore-pattern 'docs/assets/vendor/**' src scripts docs/assets docs/demos",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false -p tsconfig.json && tsc -p docs/demos/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
@@ -66,6 +66,26 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.mjs"
       }
+    },
+    "./jsx-runtime": {
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "./jsx-dev-runtime": {
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      }
     }
   },
   "main": "./dist/index.cjs",
@@ -73,6 +93,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "skills",
     "README.md",
     "LICENSE"
   ],
@@ -84,6 +105,10 @@
     "@vitest/browser": "^5.0.0",
     "@vitest/browser-playwright": "^5.0.0",
     "@vitest/coverage-v8": "^5.0.0",
+    "defuss-dom-router": "0.1.1",
+    "defuss-i18n": "0.2.0",
+    "defuss-query": "0.2.0",
+    "defuss-store": "0.1.0",
     "happy-dom": "^20.5.0",
     "oxc-minify": "^0.149.0",
     "oxlint": "^1.81.0",

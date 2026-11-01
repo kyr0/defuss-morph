@@ -8,6 +8,8 @@
 E2E := tmp/e2e
 # the consumer's server-side DOM: the same happy-dom version the unit tests run on
 HAPPY_DOM = $(shell node -p "require('./node_modules/happy-dom/package.json').version")
+# the store the consumer drives reactive() with: the version bun.lock pins for the tests
+STORE = $(shell node -p "require('./node_modules/defuss-store/package.json').version")
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z0-9_ -]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2}'
@@ -49,10 +51,12 @@ coverage: ## Tests with merged v8 coverage (prints the `All files` table)
 e2e: build ## Pack → install the tarball in a clean consumer → Node + Chromium checks → output/
 	rm -rf $(E2E) && mkdir -p $(E2E)/consumer output
 	bun pm pack --destination $(E2E) --quiet
-	cp scripts/e2e/consumer.mjs scripts/e2e/consumer.cjs $(E2E)/consumer/
+	cp scripts/e2e/consumer.mjs scripts/e2e/consumer.cjs scripts/e2e/consumer.tsx scripts/e2e/reorder-matrix.mjs $(E2E)/consumer/
+	cp scripts/e2e/tsconfig.consumer.json $(E2E)/consumer/tsconfig.json
 	cd $(E2E)/consumer && printf '{ "name": "consumer", "private": true, "type": "module" }\n' > package.json \
-		&& bun add --silent ../defuss-morph-*.tgz happy-dom@$(HAPPY_DOM)
+		&& bun add --silent ../defuss-morph-*.tgz happy-dom@$(HAPPY_DOM) defuss-store@$(STORE)
 	cd $(E2E)/consumer && node consumer.mjs ../../../output/e2e-consumer.json && node consumer.cjs
+	cd $(E2E)/consumer && $(CURDIR)/node_modules/.bin/tsc -p tsconfig.json && echo "$$(date -u +%FT%TZ) INFO e2e.consumer.tsx pass JSX type-checks against the packed declarations"
 	node scripts/e2e/browser.mjs
 
 verify: lint test coverage e2e ## What CI runs: every gate verb, cheapest first
@@ -90,8 +94,8 @@ log: ## Last 40 lines of the dev server log (stdout, stderr)
 metrics: ## Print the measured artifact sizes (dist/stats.json)
 	@cat dist/stats.json
 
-bench: ## No benchmark: the docs and README make no speed claim
-	@echo "∅ bench: no performance claim is made; measure before adding one"
+bench: build ## The website's benchmark in headless Chromium → table + output/bench.json
+	node scripts/bench.mjs
 
 purge-cdn: ## Purge the jsDelivr @latest cache for the CDN assets (after npm publish)
 	bun run purge-cdn

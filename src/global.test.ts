@@ -31,6 +31,17 @@ const EXPECTED_API_FUNCTIONS = [
   "performTransition",
   "getTransitionStyles",
   "applyStyles",
+  "jsx",
+  "jsxs",
+  "jsxDEV",
+  "h",
+  "Fragment",
+  "createRef",
+  "isRef",
+  "reactive",
+  "Reactive",
+  "installReactive",
+  "templateContent",
 ] as const;
 
 /**

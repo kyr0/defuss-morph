@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>defuss-morph — reactive HTML with defuss-store and defuss-query</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-block: 1rem; }
+    code { background: #f4f4f4; padding: 0 4px; border-radius: 4px; }
+    button { margin-right: 0.5rem; }
+    #todos { padding-left: 1.25rem; }
+    #todos li { display: flex; gap: 0.75rem; align-items: center; padding: 0.25rem 0; }
+    #todos li.done label { text-decoration: line-through; color: #777; }
+    output, #summary { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Reactive HTML: a store re-renders markup</h1>
+  <p>
+    <code>reactive({ store, render }, element)</code> renders an HTML string now and again on every store change,
+    by morphing it in: the rows that stay are the same nodes, with what you typed into them. defuss-query adds the
+    same as <code>df$(selector).reactive()</code> for markup that is already in the page.
+  </p>
+
+  <section>
+    <h2>1. <code>reactive()</code>: a todo list from a defuss-store store</h2>
+    <form id="add"><input name="text" placeholder="New todo" aria-label="New todo" autocomplete="off"> <button>Add</button></form>
+    <ul id="todos"></ul>
+    <button type="button" id="sort">Open ones first</button>
+    <p><small>Type a note next to a todo, then tick, add or sort: each keyed row moves with its note.</small></p>
+  </section>
+
+  <section>
+    <h2>2. <code>df$(selector).reactive()</code>: markup that is already in the page</h2>
+    <p id="summary">no summary yet</p>
+    <button type="button" id="stop">Stop the summary (AbortController)</button>
+  </section>
+
+  <!-- Local: the repo build first, then defuss-query, its recommended order.
+       Production: https://cdn.jsdelivr.net/npm/defuss-morph@latest/dist/all.min.js -->
+  <script type="module" src="../dist/all.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/defuss-query@0.2.0/dist/all.min.js"></script>
+  <script type="module">
+    import { createStore } from "https://cdn.jsdelivr.net/npm/defuss-store@0.1.0/dist/browser.min.js";
+
+    // defuss-morph loaded before defuss-query: give query's selections .reactive() once
+    df$.installReactive(df$);
+
+    const todos = createStore({
+      items: [
+        { id: 1, text: "Write the docs", done: false },
+        { id: 2, text: "Ship 0.3.0", done: true },
+      ],
+    });
+    let nextId = 3;
+    const esc = (text) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+    // 1. the list: an HTML string per render; the user's text is escaped
+    const list = document.getElementById("todos");
+    df$.reactive({
+      store: todos,
+      render: () => todos.value.items.map((todo) => `
+        <li key="todo-${todo.id}" class="${todo.done ? "done" : ""}">
+          <label><input type="checkbox" data-toggle="${todo.id}" ${todo.done ? "checked" : ""}> ${esc(todo.text)}</label>
+          <input class="note" placeholder="note" aria-label="Note for ${esc(todo.text)}">
+        </li>`).join(""),
+    }, list);
+
+    // HTML strings carry no handlers: one listener on the list serves every row and survives every render
+    list.addEventListener("change", (event) => {
+      const id = Number(event.target.dataset.toggle);
+      if (!id) return;
+      todos.update(({ items }) => ({ items: items.map((todo) => (todo.id === id ? { ...todo, done: !todo.done } : todo)) }));
+    });
+
+    document.getElementById("add").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const field = event.target.elements.text;
+      const text = field.value.trim();
+      if (text) todos.update(({ items }) => ({ items: [...items, { id: nextId++, text, done: false }] }));
+      field.value = "";
+    });
+
+    document.getElementById("sort").addEventListener("click", () =>
+      todos.update(({ items }) => ({ items: [...items].sort((a, b) => Number(a.done) - Number(b.done)) })));
+
+    // 2. the summary: selected by id, bound until the signal aborts
+    const stop = new AbortController();
+    df$("#summary").reactive({
+      store: todos,
+      render: () => `${todos.value.items.filter((todo) => todo.done).length} of ${todos.value.items.length} done`,
+      signal: stop.signal,
+    });
+    document.getElementById("stop").addEventListener("click", () => stop.abort());
+  </script>
+</body>
+</html>

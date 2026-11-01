@@ -5,7 +5,10 @@
 // which the source-tree unit suite had missed.
 import { readFileSync, writeFileSync } from "node:fs";
 import { Window } from "happy-dom";
-import { morph, updateDomWithVdom } from "defuss-morph";
+import { createStore } from "defuss-store";
+import { Reactive, createRef, h, jsx, morph, reactive, updateDomWithVdom } from "defuss-morph";
+import * as jsxRuntime from "defuss-morph/jsx-runtime";
+import { reorderMatrix } from "./reorder-matrix.mjs";
 
 const log = (level, message) => console.log(`${new Date().toISOString()} ${level} e2e.consumer ${message}`);
 const results = [];
@@ -24,6 +27,9 @@ morph(app, `<ul><li key="b">Beta</li><li key="a">Alpha 2</li></ul>`);
 const reordered = app.querySelectorAll("li");
 check("keyed reorder moves the existing nodes", reordered[0] === beta && reordered[1] === alpha && alpha.textContent === "Alpha 2");
 
+// the everyday list operations (scripts/e2e/reorder-matrix.mjs); happy-dom has no moveBefore, so insertBefore moves
+for (const r of reorderMatrix({ document: window.document, morph, moveBefore: false })) check(r.detail ? `${r.name} (${r.detail})` : r.name, r.ok);
+
 morph(app, `<input id="name">`);
 const input = app.querySelector("#name");
 input.value = "typed by a user";
@@ -38,6 +44,28 @@ check("diff mode patches by key, appends new, keeps the rest", rows.firstElement
 
 updateDomWithVdom(app, [{ type: "input", attributes: { type: "checkbox", id: "c", checked: false }, children: [] }]);
 check("VNodes express explicit state (checked: false)", app.querySelector("#c").checked === false);
+
+// reactive(): a defuss-store store drives an HTML string; the paragraph is patched, not replaced
+const cart = createStore({ count: 1 });
+const region = window.document.createElement("section");
+window.document.body.appendChild(region);
+const dispose = reactive({ store: cart, render: () => `<p>${cart.value.count} items</p>` }, region);
+const paragraph = region.querySelector("p");
+cart.set("count", 2);
+check("reactive() re-renders on a defuss-store change into the same node", region.querySelector("p") === paragraph && paragraph.textContent === "2 items");
+dispose();
+cart.set("count", 3);
+check("its dispose function unsubscribes", paragraph.textContent === "2 items");
+
+// <Reactive> written with h(), a ref on its wrapper; subscribed once mounted (onMount runs in a microtask)
+const counter = createStore({ n: 0 });
+const wrapper = createRef();
+morph(app, h(Reactive, { ref: wrapper, tag: "output", store: counter, render: () => String(counter.value.n) }));
+await new Promise((resolve) => setTimeout(resolve, 0));
+counter.set("n", 5);
+check("<Reactive> renders its wrapper, sets the ref and follows the store", wrapper.current === app.querySelector("output") && wrapper.current.textContent === "5");
+
+check("defuss-morph/jsx-runtime is the package entry, not a second copy", jsxRuntime.jsx === jsx && typeof jsxRuntime.Fragment === "function");
 
 check("the library entry registers no df$ global", !("df$" in globalThis));
 

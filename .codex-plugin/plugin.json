@@ -1,0 +1,28 @@
+{
+  "name": "defuss-morph",
+  "description": "Write DOM updates with defuss-morph: morph HTML strings or JSX into the live DOM so focus, typed input and listeners survive; store-driven reactive rendering, refs and forwardRef; defuss-query, defuss-store, defuss-i18n and defuss-dom-router together.",
+  "version": "0.3.0",
+  "author": {
+    "name": "Aron Homberg",
+    "url": "https://github.com/kyr0"
+  },
+  "homepage": "https://morph.defuss.org/",
+  "repository": "https://github.com/kyr0/defuss-morph",
+  "license": "MIT",
+  "keywords": ["dom", "morph", "reactive", "jsx", "html", "frontend", "defuss"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "defuss-morph",
+    "shortDescription": "Update the DOM by morphing HTML or JSX, and keep focus, typed input and listeners",
+    "longDescription": "The defuss-morph skill teaches when and how to morph instead of assigning innerHTML: keyed lists, controlled form state through VNodes, diff mode, transitions, store-driven rendering with reactive(), <Reactive> and df$(selector).reactive(), refs, the forwardRef pattern, and defuss-query, defuss-store, defuss-i18n and defuss-dom-router together.",
+    "developerName": "Aron Homberg",
+    "category": "Productivity",
+    "capabilities": ["Instructions", "Read", "Write"],
+    "websiteURL": "https://morph.defuss.org/",
+    "defaultPrompt": [
+      "Render this list from a defuss-store store with defuss-morph and keep the typed inputs.",
+      "Replace the innerHTML updates in this page with defuss-morph.",
+      "Add a component that a parent controls through its ref."
+    ]
+  }
+}

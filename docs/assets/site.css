@@ -122,12 +122,61 @@
   .dm-api .mk-code-block { margin: 0; }
   .dm-api .mk-code-block code > span { white-space: pre-wrap; overflow-wrap: anywhere; }
 
+  /* patterns and integrations: the source of a demo beside the demo itself */
+  .dm-pattern { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .dm-pattern .mk-code-block { margin: 0; }
+  .dm-pattern .mk-code-block code > span { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .dm-pattern .mk-code-block pre[data-numbers] code > span { padding-inline-start: 3rem; text-indent: -3rem; }
+  .dm-live { position: relative; display: flex; flex-direction: column; gap: 1rem; min-width: 0; padding: 1.5rem 1rem 1rem;
+    border: 1px dashed var(--border); border-radius: var(--radius-lg); background: var(--background); }
+  .dm-live > .dm-stage-label { inset-block-start: -.6rem; }
+  .dm-live p { margin: 0; }
+  .dm-live-part { display: flex; flex-direction: column; gap: .5rem; }
+  .dm-live-part + .dm-live-part { padding-block-start: 1rem; border-block-start: 1px solid var(--border); }
+  .dm-live-name { font-size: .75rem; font-weight: 600; color: var(--muted-foreground); }
+  .dm-cart { display: flex; flex-direction: column; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+  .dm-cart li { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .375rem .625rem; border: 1px solid var(--border);
+    border-radius: var(--radius-md); background: var(--card); }
+  .dm-cart li > span { min-width: 6rem; font-weight: 500; }
+  .dm-cart li .input { flex: 1; min-width: 6rem; }
+  .dm-live ol.dm-cart li { justify-content: space-between; }
+  .dm-live form.dm-row .input { flex: 1; min-width: 8rem; }
+  .dm-live output { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .dm-stack { display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; }
+  .dm-stepper { display: flex; align-items: center; gap: .75rem; }
+  .dm-langs { display: flex; flex-direction: column; gap: .75rem; }
+  .dm-langs ul { display: flex; flex-wrap: wrap; gap: .375rem; margin: 0; padding: 0; list-style: none; }
+  .dm-langs li { padding: .125rem .625rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); font-size: .875rem; }
+  .dm-langs [data-ref="lang-count"] { font-size: .8125rem; color: var(--muted-foreground); }
+  .dm-tags { display: flex; flex-wrap: wrap; gap: .375rem; margin: 0; padding: 0; list-style: none; }
+  .dm-live section[data-i18n-component] { display: flex; flex-direction: column; gap: .75rem; }
+  .dm-live section[data-i18n-component] h3 { margin: 0; font-size: 1.125rem; }
+  .dm-live-frame iframe { width: 100%; height: 22rem; border: 0; border-radius: var(--radius-md); background: var(--background); }
+  @media (max-width: 60rem) { .dm-pattern { grid-template-columns: minmax(0, 1fr); } }
+
   /* numbers */
   .mk-stats-desc a { color: var(--foreground); text-decoration: underline; text-underline-offset: 2px; }
   .mk-stat-value .badge { vertical-align: middle; }
   .dm-metrics { margin: 0; align-self: center; display: flex; flex-direction: column; gap: .5rem; aspect-ratio: auto; overflow: visible; background: none; }
   .dm-metrics .mockup-code { margin: 0; }
   .dm-figcaption { font-size: .75rem; color: var(--muted-foreground); }
+
+  /* benchmark */
+  .dm-bench { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .dm-bench-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+  .dm-bench-controls output { font-size: .8125rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+  .dm-bench-table td, .dm-bench-table thead th:not(:first-child) { text-align: end; font-variant-numeric: tabular-nums; }
+  .dm-bench-table tbody th { font-weight: 400; white-space: nowrap; }
+  .dm-bench-best { font-weight: 700; }
+  .dm-bench-na { color: var(--muted-foreground); }
+  .dm-bench-wrong { color: var(--destructive); font-weight: 600; }
+  .dm-bench-stage iframe { height: 18rem; }
+  .dm-bench-code { margin-block-start: 1.5rem; }
+  .dm-bench-code summary { cursor: pointer; font-weight: 600; }
+  .dm-bench-code .mk-code-block { margin: 1rem 0 0; }
+  .dm-bench-code .mk-code-block code > span { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .dm-bench-code .mk-code-block pre[data-numbers] code > span { padding-inline-start: 3rem; text-indent: -3rem; }
+  @media (max-width: 60rem) { .dm-bench { grid-template-columns: minmax(0, 1fr); } }
 
   /* install: one leaf-cornered panel on a faint dot pattern */
   .dm-use {
@@ -145,7 +194,11 @@
   .mk-code-block:has(input[value="global"]:checked) [data-tab="global"], .mk-code-block:has(input[value="esm"]:checked) [data-tab="esm"],
   .mk-code-block:has(input[value="html"]:checked) [data-tab="html"], .mk-code-block:has(input[value="jsx"]:checked) [data-tab="jsx"],
   .mk-code-block:has(input[value="diff"]:checked) [data-tab="diff"],
-  .mk-code-block:has(input[value="skills"]:checked) [data-tab="skills"], .mk-code-block:has(input[value="claude"]:checked) [data-tab="claude"] { display: block; }
+  .mk-code-block:has(input[value="skills"]:checked) [data-tab="skills"], .mk-code-block:has(input[value="claude"]:checked) [data-tab="claude"],
+  .mk-code-block:has(input[value="query"]:checked) [data-tab="query"], .mk-code-block:has(input[value="store"]:checked) [data-tab="store"],
+  .mk-code-block:has(input[value="script"]:checked) [data-tab="script"], .mk-code-block:has(input[value="markup"]:checked) [data-tab="markup"],
+  .mk-code-block:has(input[value="claude-code"]:checked) [data-tab="claude-code"], .mk-code-block:has(input[value="codex"]:checked) [data-tab="codex"],
+  .mk-code-block:has(input[value="any-agent"]:checked) [data-tab="any-agent"] { display: block; }
   /* half-width columns: wrap instead of cutting, with continuation lines hanging past the number column */
   .dm-use .mk-code-block code > span { white-space: pre-wrap; overflow-wrap: anywhere; }
   .dm-use .mk-code-block pre[data-numbers] code > span { padding-inline-start: 3rem; text-indent: -3rem; }

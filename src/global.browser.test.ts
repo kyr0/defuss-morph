@@ -197,6 +197,42 @@ describe("df$ global — CDN bundle (dist/all.js)", () => {
   });
 });
 
+describe("df$ global — with defuss-query from its CDN bundle", () => {
+  const counter = () => {
+    const listeners = new Set<() => void>();
+    const store = { n: 1, subscribe: (fn: () => void) => (listeners.add(fn), () => listeners.delete(fn)) };
+    return { store, bump: () => (store.n++, listeners.forEach((fn) => fn())) };
+  };
+
+  it("loaded after defuss-query, it adds .reactive() to df$ selections itself", async () => {
+    await loadAsScript("/node_modules/defuss-query/dist/all.js");
+    await loadAsScript("/dist/all.js");
+    expect(typeof df()).toBe("function");
+
+    const el = document.createElement("div");
+    el.innerHTML = `<p class="count"></p>`;
+    document.body.appendChild(el);
+    const { store, bump } = counter();
+    df()(el).find(".count").reactive({ store, render: () => `<b>${store.n}</b>` });
+    bump();
+    expect(el.innerHTML).toBe(`<p class="count"><b>2</b></p>`);
+  });
+
+  it("loaded before defuss-query (its recommended order), df$.installReactive(df$) adds it", async () => {
+    await loadAsScript("/dist/all.js");
+    await loadAsScript("/node_modules/defuss-query/dist/all.js");
+    expect(typeof df().fn.reactive).toBe("undefined");
+    df().installReactive(df());
+
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const { store, bump } = counter();
+    df()(el).reactive({ store, render: () => `n=${store.n}` });
+    bump();
+    expect(el.textContent).toBe("n=2");
+  });
+});
+
 describe("df$ global — library entries stay SSR-safe", () => {
   it("dist/index.mjs does NOT register df$", async () => {
     await importArtifact("/dist/index.mjs");

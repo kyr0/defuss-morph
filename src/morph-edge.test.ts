@@ -185,6 +185,24 @@ describe("morphNode edge paths", () => {
     expect(items[0].textContent).toBe("A!");
   });
 
+  // VERIFIED defect (morph-reorder.test.ts, 2026-11-01): taking the second node also dropped the first node's id from
+  // the pool, so the first was neither reused nor removed and stayed in the DOM
+  it("removes a node whose id another, matched node also carries", () => {
+    const el = container();
+    morph(el, `<article id="x">old</article><section key="f" id="x">f</section>`);
+    const [article, section] = el.children;
+
+    morph(el, `<section key="f">f!</section>`);
+    expect(el.innerHTML).toBe(`<section>f!</section>`);
+    expect(el.firstElementChild).toBe(section);
+    expect(article.isConnected).toBe(false);
+
+    morph(el, `<article id="x">old</article><section key="f" id="x">f</section>`);
+    const [again] = el.children;
+    morph(el, `<section key="f">f</section><article id="x">kept</article>`);
+    expect(el.lastElementChild).toBe(again); // the id still addresses the node that holds it
+  });
+
   it("never steals keyed nodes from a different parent", () => {
     const one = container(`<div><li key="x">in-one</li></div>`);
     const two = container();
@@ -581,5 +599,28 @@ describe("resolveGlobals", () => {
   it("derives globals from an element's own document", () => {
     const el = container("<p>x</p>");
     expect(resolveGlobals(el).window).toBe(el.ownerDocument.defaultView);
+  });
+});
+
+describe("<template> content", () => {
+  // VERIFIED defect before 0.3.0: an HTML string's template parsed to an empty template, and created or patched
+  // templates got their children as element children, not in .content, which is where the parser and defuss-i18n
+  // look for them
+  it("keeps a template's markup in .content when it is parsed, created and patched", () => {
+    const el = document.createElement("div");
+    morph(el, `<template id="t"><b>x</b></template>`);
+    const template = el.querySelector("template")!;
+    expect(template.content.textContent).toBe("x");
+    expect(template.childNodes).toHaveLength(0);
+
+    const b = template.content.firstChild;
+    morph(el, `<template id="t"><b>y</b><i>z</i></template>`);
+    expect(el.querySelector("template")).toBe(template);
+    expect(template.content.firstChild).toBe(b);
+    expect(template.content.textContent).toBe("yz");
+
+    const vnodes = document.createElement("div");
+    morph(vnodes, { type: "template", attributes: {}, children: [{ type: "p", attributes: {}, children: ["v"] }] });
+    expect(vnodes.querySelector("template")!.content.textContent).toBe("v");
   });
 });

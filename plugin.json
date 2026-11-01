@@ -1,0 +1,15 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "defuss-morph",
+  "version": "0.3.0",
+  "description": "Write DOM updates with defuss-morph: morph HTML strings or JSX into the live DOM so focus, typed input and listeners survive; store-driven reactive rendering, refs and forwardRef; defuss-query, defuss-store, defuss-i18n and defuss-dom-router together.",
+  "author": {
+    "name": "Aron Homberg",
+    "url": "https://github.com/kyr0"
+  },
+  "homepage": "https://morph.defuss.org/",
+  "repository": "https://github.com/kyr0/defuss-morph",
+  "license": "MIT",
+  "skills": "./skills/",
+  "keywords": ["dom", "morph", "reactive", "jsx", "html", "frontend", "defuss"]
+}

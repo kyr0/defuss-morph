@@ -9,7 +9,8 @@ import {
   getRenderer,
   handleLifecycleEventsForOnMount,
 } from "./renderer.js";
-import { isCommentVNode } from "./html.js";
+import { isCommentVNode, templateContent } from "./html.js";
+import { longestIncreasingRun } from "./lis.js";
 import {
   clearDelegatedEventsDeep,
   getRegisteredEventKeys,
@@ -729,6 +730,31 @@ function moveNode(parent: MoveParent, node: Node, anchor: Node | null): void {
   }
 }
 
+/**
+ * The common case without the matching machinery: as many children as before, nothing keyed on either side (no
+ * `key`, no `id`), and every new child of the kind and tag of the node at its position. The matching below pairs each
+ * such child with that node (an unkeyed child takes the first compatible unkeyed node, which is the one at its
+ * position), moves nothing, creates nothing and removes nothing, so patching in order is the same morph. Returns
+ * false, touching nothing, when the children do not line up.
+ * VERIFIED (A/B in Chromium, 2026-11-01): VNode select and swap on 1,000 rows took about a fifth less time; every
+ * row's cells line up. morph-reorder.test.ts checks the reused nodes against the matching model for same-length lists.
+ * Keyed rows in the same order are left to the full path: VERIFIED (A/B, 2026-11-01): a keyed variant of this check
+ * changed no keyed operation beyond run-to-run noise, 500 re-renders of 10 keyed rows included.
+ */
+function patchByPosition(targetRoot: ParentNode & Node, nextChildren: Array<ValidChild>, globals: Globals): boolean {
+  const live = targetRoot.childNodes;
+  if (live.length !== nextChildren.length) return false;
+  for (let c = 0; c < nextChildren.length; c++) {
+    const node = live[c];
+    const child = nextChildren[c];
+    if (getVNodeMatchKey(child) !== null || !areNodeAndChildMatching(node, child)) return false;
+    if (node.nodeType === 1 /* Node.ELEMENT_NODE */ && getDomMatchKeys(node).length > 0) return false;
+  }
+  // matching nodes are patched in place (same kind and tag), so the live list keeps its order
+  for (let c = 0; c < nextChildren.length; c++) morphNode(live[c], nextChildren[c], globals);
+  return true;
+}
+
 /********************************************************
  * 7) Raw morph implementation (key/id aware, move-not-replace)
  *    Called directly by the guard and by internal recursive
@@ -744,8 +770,10 @@ function morphDomDirect(
   // Other elements with shadowRoot should target the shadow root.
   const el = parentElement as HTMLElement;
   const isCustomElement = el.tagName.includes("-");
+  // A <template> keeps its children in its content fragment.
   const targetRoot: ParentNode & Node =
-    el.shadowRoot && !isCustomElement ? el.shadowRoot : parentElement;
+    templateContent(parentElement) ??
+    (el.shadowRoot && !isCustomElement ? el.shadowRoot : parentElement);
 
   const nextChildren = normalizeChildren(newVDOM, mode === "diff");
 
@@ -754,21 +782,23 @@ function morphDomDirect(
     return;
   }
 
-  // snapshot existing children once for matching pools
+  if (patchByPosition(targetRoot, nextChildren, globals)) return;
+
+  // snapshot existing children once for matching pools; the pools hold their indices
   const existing = Array.from(targetRoot.childNodes);
 
-  const keyedPool = new Map<string, Node>();
-  const nodeKeys = new WeakMap<Node, Array<string>>();
-  const unkeyedPool: Array<Node> = [];
+  const keyedPool = new Map<string, number>();
+  const nodeKeys: Array<Array<string> | undefined> = [];
+  const unkeyedPool: Array<number> = [];
 
-  for (const node of existing) {
-    const keys = getDomMatchKeys(node);
+  for (let i = 0; i < existing.length; i++) {
+    const keys = getDomMatchKeys(existing[i]);
     if (keys.length > 0) {
-      nodeKeys.set(node, keys);
+      nodeKeys[i] = keys;
       let addedToKeyedPool = false;
       for (const k of keys) {
         if (!keyedPool.has(k)) {
-          keyedPool.set(k, node);
+          keyedPool.set(k, i);
           addedToKeyedPool = true;
         }
       }
@@ -776,58 +806,84 @@ function morphDomDirect(
       // unkeyed pool so the node can still be matched — and, crucially,
       // is removed when left over (duplicate keys must not leak nodes)
       if (!addedToKeyedPool) {
-        unkeyedPool.push(node);
+        unkeyedPool.push(i);
       }
     } else {
-      unkeyedPool.push(node);
+      unkeyedPool.push(i);
     }
   }
 
-  const consumeKeyedNode = (node: Node) => {
-    const keys = nodeKeys.get(node) ?? [];
-    for (const k of keys) keyedPool.delete(k);
+  // frees only the keys that address node `i`: a key or id it shares with an earlier node stays with that node, which
+  // is otherwise neither matched nor removed (VERIFIED: morph-edge.test.ts, "removes a node whose id another ...")
+  const consumeKeyedNode = (i: number) => {
+    for (const k of nodeKeys[i] ?? []) {
+      if (keyedPool.get(k) === i) keyedPool.delete(k);
+    }
   };
 
-  const takeUnkeyedMatch = (child: ValidChild): Node | undefined => {
+  const takeUnkeyedMatch = (child: ValidChild): number => {
     // try to find a compatible node (preserves focus/state by moving instead of replacing)
-    for (let i = 0; i < unkeyedPool.length; i++) {
-      const candidate = unkeyedPool[i];
-      if (areNodeAndChildMatching(candidate, child)) {
-        unkeyedPool.splice(i, 1);
-        return candidate;
+    for (let j = 0; j < unkeyedPool.length; j++) {
+      const i = unkeyedPool[j];
+      if (areNodeAndChildMatching(existing[i], child)) {
+        unkeyedPool.splice(j, 1);
+        return i;
       }
     }
 
     // SAFE: no match => don't reuse something random, create new node instead
-    return undefined;
+    return -1;
   };
 
-  let domIndex = 0;
-
-  for (const child of nextChildren) {
+  // 1) match every child to an existing node (its index) or none (-1). Matching reads keys and tags only, never
+  // positions, so matching first and placing afterwards reuses the same nodes as matching while placing.
+  const count = nextChildren.length;
+  const matched = new Int32Array(count);
+  let inOrder = true;
+  let previous = -1;
+  for (let c = 0; c < count; c++) {
+    const child = nextChildren[c];
     const key = getVNodeMatchKey(child);
-
-    let match: Node | undefined;
-
+    let i = -1;
     if (key) {
-      match = keyedPool.get(key);
-      if (match) consumeKeyedNode(match);
-    } else {
-      match = takeUnkeyedMatch(child);
-    }
-
-    const anchor = targetRoot.childNodes[domIndex] ?? null;
-
-    if (match) {
-      // move node into place (preserves identity, focus and state)
-      if (match !== anchor) {
-        moveNode(targetRoot, match, anchor);
+      const hit = keyedPool.get(key);
+      if (hit !== undefined) {
+        i = hit;
+        consumeKeyedNode(hit);
       }
+    } else {
+      i = takeUnkeyedMatch(child);
+    }
+    matched[c] = i;
+    if (i >= 0) {
+      if (i < previous) inOrder = false;
+      previous = i;
+    }
+  }
 
-      // a replacement by morphNode happens in place, so domIndex stays valid
+  // 2) the matched nodes in the longest run that is already in order stay where they are; only the others move, so
+  // swapping two rows moves two and removing one moves none. VERIFIED: the move counts in morph-reorder.test.ts.
+  const stays = inOrder ? null : longestIncreasingRun(matched);
+  const staying = (c: number) => matched[c] >= 0 && (stays === null || stays[c] === 1);
+
+  // 3) left to right, in the order of the markup: patch each node, and put a moved or created one before the next
+  // node that stays (or at the end); leftovers between them are removed afterwards
+  let anchorAt = 0;
+  while (anchorAt < count && !staying(anchorAt)) anchorAt++;
+
+  for (let c = 0; c < count; c++) {
+    if (anchorAt <= c) {
+      anchorAt = c + 1;
+      while (anchorAt < count && !staying(anchorAt)) anchorAt++;
+    }
+    const anchor = anchorAt < count ? existing[matched[anchorAt]] : null;
+    const child = nextChildren[c];
+
+    if (matched[c] >= 0) {
+      const match = existing[matched[c]];
+      // move node into place (preserves identity, focus and state)
+      if (!staying(c)) moveNode(targetRoot, match, anchor);
       morphNode(match, child, globals);
-
-      domIndex++;
       continue;
     }
 
@@ -839,15 +895,14 @@ function morphDomDirect(
     for (const node of nodes) {
       targetRoot.insertBefore(node, anchor);
       handleLifecycleEventsForOnMount(node as HTMLElement);
-      domIndex++;
     }
   }
 
   // remove remaining unmatched nodes (both keyed leftovers and unkeyed leftovers)
   const remaining = new Set<Node>();
 
-  for (const node of unkeyedPool) remaining.add(node);
-  for (const node of keyedPool.values()) remaining.add(node);
+  for (const i of unkeyedPool) remaining.add(existing[i]);
+  for (const i of keyedPool.values()) remaining.add(existing[i]);
 
   for (const node of remaining) {
     if (node.parentNode === targetRoot) {

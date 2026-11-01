@@ -22,26 +22,35 @@ __export(exports_src, {
   DANGEROUSLY_SET_INNER_HTML_ATTRIBUTE: () => DANGEROUSLY_SET_INNER_HTML_ATTRIBUTE,
   DEFAULT_TRANSITION_CONFIG: () => DEFAULT_TRANSITION_CONFIG,
   FROM_DOM_MARKER: () => FROM_DOM_MARKER,
+  Fragment: () => Fragment,
   REF_ATTRIBUTE_NAME: () => REF_ATTRIBUTE_NAME,
+  Reactive: () => Reactive,
   XLINK_ATTRIBUTE_NAME: () => XLINK_ATTRIBUTE_NAME,
   XMLNS_ATTRIBUTE_NAME: () => XMLNS_ATTRIBUTE_NAME,
   applyStyles: () => applyStyles,
   areDomNodesEqual: () => areDomNodesEqual,
   clearDelegatedEvents: () => clearDelegatedEvents,
   clearDelegatedEventsDeep: () => clearDelegatedEventsDeep,
+  createRef: () => createRef,
   domNodeToVNode: () => domNodeToVNode,
   getMimeType: () => getMimeType,
   getRegisteredEventKeys: () => getRegisteredEventKeys,
   getRegisteredEventTypes: () => getRegisteredEventTypes,
   getRenderer: () => getRenderer,
   getTransitionStyles: () => getTransitionStyles,
+  h: () => h,
   handleLifecycleEventsForOnMount: () => handleLifecycleEventsForOnMount,
   htmlStringToVNodes: () => htmlStringToVNodes,
+  installReactive: () => installReactive,
   isCommentVNode: () => isCommentVNode,
   isHTML: () => isHTML,
   isMarkup: () => isMarkup,
+  isRef: () => isRef,
   isSVG: () => isSVG,
-  morph: () => morph2,
+  jsx: () => jsx,
+  jsxDEV: () => jsxDEV,
+  jsxs: () => jsxs,
+  morph: () => morph,
   nsMap: () => nsMap,
   observeUnmount: () => observeUnmount,
   onClearDelegatedEvents: () => onClearDelegatedEvents,
@@ -49,18 +58,18 @@ __export(exports_src, {
   parseEventPropName: () => parseEventPropName,
   performTransition: () => performTransition,
   queueCallback: () => queueCallback,
+  reactive: () => reactive,
   registerDelegatedEvent: () => registerDelegatedEvent,
   removeDelegatedEvent: () => removeDelegatedEvent,
   removeDelegatedEventByKey: () => removeDelegatedEventByKey,
   renderMarkup: () => renderMarkup,
   replaceDomWithVdom: () => replaceDomWithVdom,
   resolveGlobals: () => resolveGlobals,
+  templateContent: () => templateContent,
   updateDomWithVdom: () => updateDomWithVdom
 });
-
 // src/queue.ts
 var queueCallback = (cb) => (...args) => queueMicrotask(() => cb(...args));
-
 // src/delegated-events.ts
 var CAPTURE_ONLY_EVENTS = new Set([
   "focus",
@@ -240,7 +249,6 @@ var removeDelegatedEventByKey = (element, eventType, phase) => {
   if (isEntryEmpty(entry))
     byEvent.delete(eventType);
 };
-
 // src/html.ts
 var FROM_DOM_MARKER = Symbol("defuss-morph.from-dom");
 var COMMENT_TYPE = "#comment";
@@ -299,9 +307,10 @@ function getMimeType(input, Parser) {
   }
   return "text/html";
 }
+var templateContent = (element) => element.localName === "template" ? element.content : undefined;
 function domNodeToVNode(node) {
   if (node.nodeType === 3) {
-    return node.textContent || "";
+    return node.nodeValue || "";
   }
   if (node.nodeType === 1) {
     const element = node;
@@ -311,27 +320,29 @@ function domNodeToVNode(node) {
       attributes[attr.name] = domAttributeToVNodeValue(attr);
     }
     const children = [];
-    for (let i = 0;i < element.childNodes.length; i++) {
-      const childVNode = domNodeToVNode(element.childNodes[i]);
-      children.push(childVNode);
+    for (let child = (templateContent(element) ?? element).firstChild;child; child = child.nextSibling) {
+      children.push(domNodeToVNode(child));
     }
-    return {
-      type: element.tagName.toLowerCase(),
-      attributes: { ...attributes, [FROM_DOM_MARKER]: true },
-      children
-    };
+    attributes[FROM_DOM_MARKER] = true;
+    return { type: element.localName, attributes, children };
   }
   if (node.nodeType === 8) {
     return { type: COMMENT_TYPE, value: node.nodeValue ?? "" };
   }
   return "";
 }
+var inertDocuments = new WeakMap;
 var DOCUMENT_START = /^\s*(?:<!--[\s\S]*?-->\s*)*<(?:!doctype|html|head|body)[\s>/]/i;
 function htmlStringToVNodes(html, Parser) {
   if (DOCUMENT_START.test(html)) {
     return toVNodes(new Parser().parseFromString(html, "text/html").body.childNodes);
   }
-  const template = new Parser().parseFromString("", "text/html").createElement("template");
+  let inert = inertDocuments.get(Parser);
+  if (!inert) {
+    inert = new Parser().parseFromString("", "text/html");
+    inertDocuments.set(Parser, inert);
+  }
+  const template = inert.createElement("template");
   template.innerHTML = html;
   return toVNodes(template.content.childNodes);
 }
@@ -403,7 +414,7 @@ var handleLifecycleEventsForOnMount = (newEl) => {
     unmountObserved.add(newEl);
     observeUnmount(newEl, () => {
       unmountObserved.delete(newEl);
-      newEl.$onUnmount?.();
+      newEl.$onUnmount?.(newEl);
     });
   }
 };
@@ -449,7 +460,7 @@ var getRenderer = (document2) => {
           }
         }
         if (vNode.children && !vNode.attributes?.dangerouslySetInnerHTML) {
-          renderer.createChildElements(vNode.children, newEl);
+          renderer.createChildElements(vNode.children, templateContent(newEl) ?? newEl);
         }
       }
       if (newEl && parentDomElement) {
@@ -555,6 +566,35 @@ var getRenderer = (document2) => {
     }
   };
   return renderer;
+};
+// src/lis.ts
+var longestIncreasingRun = (values) => {
+  const n = values.length;
+  const marked = new Uint8Array(n);
+  const tails = new Int32Array(n);
+  const previous = new Int32Array(n);
+  let length = 0;
+  for (let i = 0;i < n; i++) {
+    const value = values[i];
+    if (value < 0)
+      continue;
+    let low = 0;
+    let high = length;
+    while (low < high) {
+      const mid = low + high >> 1;
+      if (values[tails[mid]] < value)
+        low = mid + 1;
+      else
+        high = mid;
+    }
+    previous[i] = low > 0 ? tails[low - 1] : -1;
+    tails[low] = i;
+    if (low === length)
+      length++;
+  }
+  for (let i = length > 0 ? tails[length - 1] : -1;i >= 0; i = previous[i])
+    marked[i] = 1;
+  return marked;
 };
 
 // src/morph.ts
@@ -939,70 +979,113 @@ function moveNode(parent, node, anchor) {
       active.setSelectionRange(...selection);
   }
 }
+function patchByPosition(targetRoot, nextChildren, globals) {
+  const live = targetRoot.childNodes;
+  if (live.length !== nextChildren.length)
+    return false;
+  for (let c = 0;c < nextChildren.length; c++) {
+    const node = live[c];
+    const child = nextChildren[c];
+    if (getVNodeMatchKey(child) !== null || !areNodeAndChildMatching(node, child))
+      return false;
+    if (node.nodeType === 1 && getDomMatchKeys(node).length > 0)
+      return false;
+  }
+  for (let c = 0;c < nextChildren.length; c++)
+    morphNode(live[c], nextChildren[c], globals);
+  return true;
+}
 function morphDomDirect(parentElement, newVDOM, globals, mode = "replace") {
   const el = parentElement;
   const isCustomElement = el.tagName.includes("-");
-  const targetRoot = el.shadowRoot && !isCustomElement ? el.shadowRoot : parentElement;
+  const targetRoot = templateContent(parentElement) ?? (el.shadowRoot && !isCustomElement ? el.shadowRoot : parentElement);
   const nextChildren = normalizeChildren(newVDOM, mode === "diff");
   if (mode === "diff") {
     morphDiff(targetRoot, nextChildren, globals);
     return;
   }
+  if (patchByPosition(targetRoot, nextChildren, globals))
+    return;
   const existing = Array.from(targetRoot.childNodes);
   const keyedPool = new Map;
-  const nodeKeys = new WeakMap;
+  const nodeKeys = [];
   const unkeyedPool = [];
-  for (const node of existing) {
-    const keys = getDomMatchKeys(node);
+  for (let i = 0;i < existing.length; i++) {
+    const keys = getDomMatchKeys(existing[i]);
     if (keys.length > 0) {
-      nodeKeys.set(node, keys);
+      nodeKeys[i] = keys;
       let addedToKeyedPool = false;
       for (const k of keys) {
         if (!keyedPool.has(k)) {
-          keyedPool.set(k, node);
+          keyedPool.set(k, i);
           addedToKeyedPool = true;
         }
       }
       if (!addedToKeyedPool) {
-        unkeyedPool.push(node);
+        unkeyedPool.push(i);
       }
     } else {
-      unkeyedPool.push(node);
+      unkeyedPool.push(i);
     }
   }
-  const consumeKeyedNode = (node) => {
-    const keys = nodeKeys.get(node) ?? [];
-    for (const k of keys)
-      keyedPool.delete(k);
+  const consumeKeyedNode = (i) => {
+    for (const k of nodeKeys[i] ?? []) {
+      if (keyedPool.get(k) === i)
+        keyedPool.delete(k);
+    }
   };
   const takeUnkeyedMatch = (child) => {
-    for (let i = 0;i < unkeyedPool.length; i++) {
-      const candidate = unkeyedPool[i];
-      if (areNodeAndChildMatching(candidate, child)) {
-        unkeyedPool.splice(i, 1);
-        return candidate;
+    for (let j = 0;j < unkeyedPool.length; j++) {
+      const i = unkeyedPool[j];
+      if (areNodeAndChildMatching(existing[i], child)) {
+        unkeyedPool.splice(j, 1);
+        return i;
       }
     }
-    return;
+    return -1;
   };
-  let domIndex = 0;
-  for (const child of nextChildren) {
+  const count = nextChildren.length;
+  const matched = new Int32Array(count);
+  let inOrder = true;
+  let previous = -1;
+  for (let c = 0;c < count; c++) {
+    const child = nextChildren[c];
     const key = getVNodeMatchKey(child);
-    let match;
+    let i = -1;
     if (key) {
-      match = keyedPool.get(key);
-      if (match)
-        consumeKeyedNode(match);
-    } else {
-      match = takeUnkeyedMatch(child);
-    }
-    const anchor = targetRoot.childNodes[domIndex] ?? null;
-    if (match) {
-      if (match !== anchor) {
-        moveNode(targetRoot, match, anchor);
+      const hit = keyedPool.get(key);
+      if (hit !== undefined) {
+        i = hit;
+        consumeKeyedNode(hit);
       }
+    } else {
+      i = takeUnkeyedMatch(child);
+    }
+    matched[c] = i;
+    if (i >= 0) {
+      if (i < previous)
+        inOrder = false;
+      previous = i;
+    }
+  }
+  const stays = inOrder ? null : longestIncreasingRun(matched);
+  const staying = (c) => matched[c] >= 0 && (stays === null || stays[c] === 1);
+  let anchorAt = 0;
+  while (anchorAt < count && !staying(anchorAt))
+    anchorAt++;
+  for (let c = 0;c < count; c++) {
+    if (anchorAt <= c) {
+      anchorAt = c + 1;
+      while (anchorAt < count && !staying(anchorAt))
+        anchorAt++;
+    }
+    const anchor = anchorAt < count ? existing[matched[anchorAt]] : null;
+    const child = nextChildren[c];
+    if (matched[c] >= 0) {
+      const match = existing[matched[c]];
+      if (!staying(c))
+        moveNode(targetRoot, match, anchor);
       morphNode(match, child, globals);
-      domIndex++;
       continue;
     }
     const created = createDomFromChild(child, globals);
@@ -1012,14 +1095,13 @@ function morphDomDirect(parentElement, newVDOM, globals, mode = "replace") {
     for (const node of nodes) {
       targetRoot.insertBefore(node, anchor);
       handleLifecycleEventsForOnMount(node);
-      domIndex++;
     }
   }
   const remaining = new Set;
-  for (const node of unkeyedPool)
-    remaining.add(node);
-  for (const node of keyedPool.values())
-    remaining.add(node);
+  for (const i of unkeyedPool)
+    remaining.add(existing[i]);
+  for (const i of keyedPool.values())
+    remaining.add(existing[i]);
   for (const node of remaining) {
     if (node.parentNode === targetRoot) {
       if (node.nodeType === 1) {
@@ -1051,7 +1133,6 @@ function replaceDomWithVdom(parentElement, newVDOM, globals) {
     handleLifecycleEventsForOnMount(newDom);
   }
 }
-
 // src/transitions.ts
 var injectShakeKeyframes = (doc) => {
   if (!doc)
@@ -1197,10 +1278,9 @@ var performTransition = async (element, updateCallback, config = {}) => {
     throw error;
   }
 };
-
-// src/index.ts
+// src/api.ts
 var inflightTransitions = new WeakMap;
-var morph2 = (el, newContent, options = {}) => {
+var morph = (el, newContent, options = {}) => {
   const globals = resolveGlobals(el);
   const win = globals.window;
   const mode = options.diff ? "diff" : "replace";
@@ -1228,7 +1308,151 @@ var morph2 = (el, newContent, options = {}) => {
     slot.content = newContent;
   apply(newContent);
 };
-
+// src/jsx.ts
+var toChildren = (children) => children === undefined ? [] : Array.isArray(children) ? children.flat(Infinity) : [children];
+var isVNode2 = (value) => typeof value === "object" && value !== null && !Array.isArray(value) && ("type" in value);
+var Fragment = (props) => toChildren(props?.children);
+function jsx(type, props, key) {
+  const { children, ...attributes } = props ?? {};
+  const resolvedKey = key ?? attributes.key;
+  if (resolvedKey !== undefined)
+    attributes.key = resolvedKey;
+  if (typeof type === "function") {
+    const result = type(children === undefined ? attributes : { ...attributes, children });
+    return resolvedKey !== undefined && isVNode2(result) && result.attributes?.key === undefined ? { ...result, attributes: { ...result.attributes, key: resolvedKey } } : result;
+  }
+  return { type, attributes, children: toChildren(children) };
+}
+var jsxs = jsx;
+var jsxDEV = (type, props, key) => jsx(type, props, key);
+function h(type, props, ...children) {
+  return jsx(type, children.length === 0 ? props : { ...props, children: children.length === 1 ? children[0] : children });
+}
+// src/ref.ts
+var createRef = (state) => ({
+  current: null,
+  state
+});
+var isRef = (value) => typeof value === "object" && value !== null && ("current" in value);
+// src/reactive.ts
+var isElement = (value) => typeof value === "object" && value !== null && value.nodeType === 1;
+var toStores = (store, caller) => {
+  const stores = Array.isArray(store) ? store : [store];
+  stores.forEach((candidate, index) => {
+    if (typeof candidate?.subscribe !== "function") {
+      throw new TypeError(`${caller}: store${Array.isArray(store) ? ` ${index}` : ""} has no subscribe() method`);
+    }
+  });
+  return stores;
+};
+var listen = (stores, update) => {
+  const unsubscribes = stores.map((store) => {
+    const result = store.subscribe(() => update());
+    if (typeof result === "function")
+      return result;
+    return () => result?.unsubscribe?.();
+  });
+  return () => {
+    for (const unsubscribe of unsubscribes)
+      unsubscribe();
+  };
+};
+var resolveTarget = (target) => {
+  if (isElement(target))
+    return () => [target];
+  if (isRef(target)) {
+    if (!isElement(target.current)) {
+      throw new TypeError("reactive: the ref has no element yet; call reactive() after the element is rendered (in onMount or later)");
+    }
+    return () => isElement(target.current) ? [target.current] : [];
+  }
+  if (target && typeof target.length === "number") {
+    const elements = Array.from(target).filter(isElement);
+    return () => elements;
+  }
+  throw new TypeError("reactive: the target must be an element, a ref or a list of elements");
+};
+function reactive(config, target) {
+  const stores = toStores(config?.store, "reactive");
+  if (typeof config.render !== "function")
+    throw new TypeError("reactive: config.render must be a function");
+  const elements = resolveTarget(target);
+  if (config.signal?.aborted || elements().length === 0)
+    return () => {};
+  const update = () => {
+    for (const el of elements())
+      morph(el, config.render());
+  };
+  update();
+  const unsubscribe = listen(stores, update);
+  let disposed = false;
+  const dispose = () => {
+    if (disposed)
+      return;
+    disposed = true;
+    unsubscribe();
+    config.signal?.removeEventListener("abort", dispose);
+    config.cleanup?.();
+  };
+  config.signal?.addEventListener("abort", dispose, { once: true });
+  return dispose;
+}
+var mounted = new WeakMap;
+var toChildren2 = (content) => {
+  if (typeof content === "string") {
+    if (!/[<&]/.test(content))
+      return content === "" ? [] : [content];
+    const Parser = globalThis.DOMParser;
+    if (!Parser) {
+      throw new TypeError("Reactive: rendering an HTML string needs a global DOMParser; return JSX/VNodes, or call reactive()");
+    }
+    return htmlStringToVNodes(content, Parser);
+  }
+  return Array.isArray(content) ? content.flat(Infinity) : [content];
+};
+function Reactive(props) {
+  const { store, render, cleanup, tag = "div", onMount, onUnmount, children: _children, ...attributes } = props;
+  const stores = toStores(store, "Reactive");
+  if (typeof render !== "function")
+    throw new TypeError("Reactive: the render prop must be a function");
+  return {
+    type: tag,
+    attributes: {
+      ...attributes,
+      onMount: (el) => {
+        mounted.get(el)?.unsubscribe();
+        mounted.set(el, { unsubscribe: listen(stores, () => morph(el, render())), cleanup });
+        morph(el, render());
+        if (typeof onMount === "function")
+          onMount(el);
+      },
+      onUnmount: (el) => {
+        const entry = mounted.get(el);
+        mounted.delete(el);
+        entry?.unsubscribe();
+        entry?.cleanup?.();
+        if (typeof onUnmount === "function")
+          onUnmount(el);
+      }
+    },
+    children: toChildren2(render())
+  };
+}
+var installReactive = (df$) => {
+  const fn = df$?.fn;
+  if (typeof fn !== "object" || fn === null) {
+    throw new TypeError("installReactive: expected defuss-query's df$ (a df$ with a df$.fn prototype)");
+  }
+  Object.defineProperty(fn, "reactive", {
+    configurable: true,
+    writable: true,
+    value: function(config) {
+      reactive(config, this);
+      return this;
+    }
+  });
+  return df$;
+};
 // src/global.ts
 if (typeof globalThis !== "undefined") {
   const g = globalThis;
@@ -1237,6 +1461,9 @@ if (typeof globalThis !== "undefined") {
     g.df$ = {};
   }
   Object.assign(g.df$, exports_src);
+  const fn = g.df$.fn;
+  if (typeof fn === "object" && fn !== null)
+    installReactive(g.df$);
 }
 export {
   CAPTURE_ONLY_EVENTS,
@@ -1245,26 +1472,35 @@ export {
   DANGEROUSLY_SET_INNER_HTML_ATTRIBUTE,
   DEFAULT_TRANSITION_CONFIG,
   FROM_DOM_MARKER,
+  Fragment,
   REF_ATTRIBUTE_NAME,
+  Reactive,
   XLINK_ATTRIBUTE_NAME,
   XMLNS_ATTRIBUTE_NAME,
   applyStyles,
   areDomNodesEqual,
   clearDelegatedEvents,
   clearDelegatedEventsDeep,
+  createRef,
   domNodeToVNode,
   getMimeType,
   getRegisteredEventKeys,
   getRegisteredEventTypes,
   getRenderer,
   getTransitionStyles,
+  h,
   handleLifecycleEventsForOnMount,
   htmlStringToVNodes,
+  installReactive,
   isCommentVNode,
   isHTML,
   isMarkup,
+  isRef,
   isSVG,
-  morph2 as morph,
+  jsx,
+  jsxDEV,
+  jsxs,
+  morph,
   nsMap,
   observeUnmount,
   onClearDelegatedEvents,
@@ -1272,14 +1508,16 @@ export {
   parseEventPropName,
   performTransition,
   queueCallback,
+  reactive,
   registerDelegatedEvent,
   removeDelegatedEvent,
   removeDelegatedEventByKey,
   renderMarkup,
   replaceDomWithVdom,
   resolveGlobals,
+  templateContent,
   updateDomWithVdom
 };
 
-//# debugId=382095B0D4D15E1A64756E2164756E21
+//# debugId=18D1BB0152DB217664756E2164756E21
 //# sourceMappingURL=all.js.map

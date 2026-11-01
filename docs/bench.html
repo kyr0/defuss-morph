@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>defuss-morph · benchmark stage</title>
+  <meta name="description" content="The table the defuss-morph benchmark updates; the website embeds it, make bench opens it in headless Chromium.">
+  <meta name="robots" content="noindex">
+  <script src="assets/frame-theme.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/defuss-shadcn@0.9.11/dist/components/core.min.css" integrity="sha384-qUQCm/MM2DNkdT3uEdx8Mpocj+GwXlgLat0FnWv657c16tHWOouZFT2nV7kg5pBE" crossorigin="anonymous">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; padding: .5rem 1rem; background: var(--background); color: var(--foreground); font: .8125rem/1.5 var(--font-sans); }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    td { padding: .125rem .5rem; border-block-end: 1px solid var(--border); }
+    td:first-child { width: 4rem; color: var(--muted-foreground); }
+    td:last-child { width: 2rem; text-align: end; }
+    tr.selected { background: var(--accent); }
+    button { border: 0; background: none; color: var(--muted-foreground); font: inherit; }
+  </style>
+  <!-- The benchmark imports defuss-morph by name; make build writes this map (scripts/lib/demos.ts). -->
+  <script type="importmap">
+  {
+    "imports": {
+      "defuss-morph": "./assets/defuss-morph.mjs",
+      "defuss-morph/jsx-runtime": "./assets/defuss-morph.mjs",
+      "defuss-query": "./assets/vendor/defuss-query/index.js",
+      "defuss-store": "./assets/vendor/defuss-store/browser.js",
+      "defuss-i18n": "./assets/vendor/defuss-i18n/index.js",
+      "defuss-dom-router": "./assets/vendor/defuss-dom-router/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <table><tbody data-ref="rows"></tbody></table>
+  <script type="module" src="assets/bench.js"></script>
+</body>
+</html>

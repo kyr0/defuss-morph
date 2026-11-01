@@ -1,0 +1,15 @@
+{
+  "name": "defuss-morph",
+  "metadata": {
+    "description": "DOM morphing for HTML and JSX without a virtual DOM, with store-driven reactive rendering"
+  },
+  "owner": {
+    "name": "Aron Homberg"
+  },
+  "plugins": [
+    {
+      "name": "defuss-morph",
+      "source": "./"
+    }
+  ]
+}

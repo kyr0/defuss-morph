@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { DEMO_PAGES, VENDOR_COPIES, buildDemos, includeSources, renderImportMap } from './demos.ts';
 import { highlightPage } from './highlight.ts';
 import { type StatsFile, kb } from './stats.ts';
 
@@ -15,10 +16,11 @@ import { type StatsFile, kb } from './stats.ts';
  */
 
 /** [built file, website copy]: the page imports the side-effect-free ESM entry;
- *  the CDN bundle is offered as the one-file download */
+ *  the CDN bundle is offered as the one-file download; the demos import the sibling packages (demos.ts) */
 export const DOCS_COPIES = [
   ['dist/index.mjs', 'docs/assets/defuss-morph.mjs'],
   ['dist/all.min.js', 'docs/assets/defuss-morph.min.js'],
+  ...VENDOR_COPIES,
 ] as const;
 
 export const DOCS_PAGE = 'docs/index.html';
@@ -53,9 +55,9 @@ export const renderDocsStats = (html: string, stats: StatsFile): string =>
     return `${open}${kb(entry[kind])}${close}`;
   });
 
-/** The page as docs.ts writes it: current size figures, highlighted code examples. */
-export const renderDocsPage = async (html: string, stats: StatsFile): Promise<string> =>
-  highlightPage(renderDocsStats(html, stats));
+/** A page as docs.ts writes it: current size figures, import map, code blocks filled from their sources and highlighted. */
+export const renderDocsPage = async (html: string, stats: StatsFile, root: string, page: string = DOCS_PAGE): Promise<string> =>
+  highlightPage(includeSources(renderImportMap(renderDocsStats(html, stats), page), root));
 
 /** Every way docs/ differs from what docs.ts would write now. */
 export const docsDrift = async (root: string, stats: StatsFile): Promise<string[]> => {
@@ -77,9 +79,23 @@ export const docsDrift = async (root: string, stats: StatsFile): Promise<string[
     problems.push(`${DOCS_SHIKI} missing`);
   }
   if (shiki && !shiki.equals(await buildDocsShiki(root))) problems.push(`${DOCS_SHIKI} differs from a fresh build of scripts/lib/shiki-browser.ts`);
+  for (const [path, bytes] of await buildDemos(root)) {
+    let built: Buffer | undefined;
+    try {
+      built = readFileSync(join(root, path));
+    } catch {
+      problems.push(`${path} missing`);
+    }
+    if (built && !built.equals(bytes)) problems.push(`${path} differs from a fresh build of docs/demos/`);
+  }
   const html = readFileSync(join(root, DOCS_PAGE), 'utf8');
   if (!html.match(STAT)) problems.push(`${DOCS_PAGE} quotes no data-stat size`);
   if (renderDocsStats(html, stats) !== html) problems.push(`${DOCS_PAGE} size figures are stale`);
-  if ((await highlightPage(html)) !== html) problems.push(`${DOCS_PAGE} code examples differ from the shiki output`);
+  for (const page of DEMO_PAGES) {
+    const current = readFileSync(join(root, page), 'utf8');
+    if ((await renderDocsPage(current, stats, root, page)) !== current) {
+      problems.push(`${page} differs from what make build writes (import map, code from docs/demos/, shiki colors)`);
+    }
+  }
   return problems;
 };

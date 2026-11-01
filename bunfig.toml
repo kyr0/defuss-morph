@@ -1,0 +1,4 @@
+[install]
+# defuss-query and defuss-i18n (dev dependencies) declare defuss-morph as a peer: installing it would put an
+# npm copy of this package into node_modules beside the source under test.
+peer = false

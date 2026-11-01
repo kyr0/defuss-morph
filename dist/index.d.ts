@@ -59,42 +59,6 @@ interface DomAbstractionImpl {
     setAttributes(virtualNode: VNode<VNodeAttributes>, domElement: Element): void;
 }
 
-type TransitionType = "fade" | "slide-left" | "slide-right" | "shake" | "none";
-interface TransitionStyles {
-    enter: Record<string, string>;
-    enterActive: Record<string, string>;
-    exit: Record<string, string>;
-    exitActive: Record<string, string>;
-}
-type TransitionsEasing = "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out" | "step-start" | "step-end";
-/** The `transition` option of `morph()`; every field is optional (see {@link DEFAULT_TRANSITION_CONFIG}). */
-interface TransitionConfig {
-    /** Built-in animation; `"none"` keeps `morph()` synchronous. Default `"fade"`. */
-    type?: TransitionType;
-    /** Own style maps for the four phases (not used by `"fade"`). */
-    styles?: TransitionStyles;
-    /** Milliseconds per phase. Default 300. */
-    duration?: number;
-    /** CSS timing function. Default `"ease-in-out"`. */
-    easing?: TransitionsEasing | string;
-    /** Milliseconds to wait before starting. Default 0. */
-    delay?: number;
-    /** Animate the morphed element's parent (default) or the element itself. */
-    target?: "parent" | "self";
-}
-/** The four phase style maps of a built-in transition type (empty maps for an unknown type). */
-declare const getTransitionStyles: (type: TransitionType, duration: number, easing?: string) => TransitionStyles;
-/** Sets each CSS property of `styles` on `el` (`style.setProperty`). */
-declare const applyStyles: (el: HTMLElement, styles: Record<string, string | number>) => void;
-/** Defaults merged under every transition config. */
-declare const DEFAULT_TRANSITION_CONFIG: TransitionConfig;
-/**
- * Runs `updateCallback` inside a transition on `element`. `fade` cross-fades a snapshot of the old
- * content over the new one; the other types animate out, run the update, then animate in. Styles
- * the transition set are restored afterwards, also when the update throws (the error propagates).
- */
-declare const performTransition: (element: HTMLElement, updateCallback: () => Promise<void>, config?: TransitionConfig) => Promise<void>;
-
 /**
  * Wraps `cb` so each call runs it in a microtask, with the same arguments.
  * VERIFIED: renderer.test.ts asserts onMount has not run before that microtask.
@@ -282,6 +246,12 @@ declare function renderMarkup(markup: string, Parser: typeof DOMParser, doc?: Do
 /** The `DOMParser` MIME type for `input`: `image/svg+xml` for SVG documents, else `text/html`. */
 declare function getMimeType(input: string, Parser: typeof DOMParser): DOMParserSupportedType;
 /**
+ * The content fragment of a `<template>` element, where the parser puts its markup; `undefined` for other elements.
+ * morph reads, creates and patches a template's children there, so markup such as defuss-i18n's translation
+ * templates survives a morph.
+ */
+declare const templateContent: (element: Element) => DocumentFragment | undefined;
+/**
  * Converts a DOM node to a VNode structure for use with updateDomWithVdom.
  * This allows us to leverage the sophisticated partial update system even for Node inputs.
  */
@@ -291,6 +261,42 @@ declare function domNodeToVNode(node: Node): VNode<VNodeAttributes> | string;
  * This allows markup strings to benefit from the intelligent partial update system.
  */
 declare function htmlStringToVNodes(html: string, Parser: typeof DOMParser): Array<VNode<VNodeAttributes> | string>;
+
+type TransitionType = "fade" | "slide-left" | "slide-right" | "shake" | "none";
+interface TransitionStyles {
+    enter: Record<string, string>;
+    enterActive: Record<string, string>;
+    exit: Record<string, string>;
+    exitActive: Record<string, string>;
+}
+type TransitionsEasing = "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out" | "step-start" | "step-end";
+/** The `transition` option of `morph()`; every field is optional (see {@link DEFAULT_TRANSITION_CONFIG}). */
+interface TransitionConfig {
+    /** Built-in animation; `"none"` keeps `morph()` synchronous. Default `"fade"`. */
+    type?: TransitionType;
+    /** Own style maps for the four phases (not used by `"fade"`). */
+    styles?: TransitionStyles;
+    /** Milliseconds per phase. Default 300. */
+    duration?: number;
+    /** CSS timing function. Default `"ease-in-out"`. */
+    easing?: TransitionsEasing | string;
+    /** Milliseconds to wait before starting. Default 0. */
+    delay?: number;
+    /** Animate the morphed element's parent (default) or the element itself. */
+    target?: "parent" | "self";
+}
+/** The four phase style maps of a built-in transition type (empty maps for an unknown type). */
+declare const getTransitionStyles: (type: TransitionType, duration: number, easing?: string) => TransitionStyles;
+/** Sets each CSS property of `styles` on `el` (`style.setProperty`). */
+declare const applyStyles: (el: HTMLElement, styles: Record<string, string | number>) => void;
+/** Defaults merged under every transition config. */
+declare const DEFAULT_TRANSITION_CONFIG: TransitionConfig;
+/**
+ * Runs `updateCallback` inside a transition on `element`. `fade` cross-fades a snapshot of the old
+ * content over the new one; the other types animate out, run the update, then animate in. Styles
+ * the transition set are restored afterwards, also when the update throws (the error propagates).
+ */
+declare const performTransition: (element: HTMLElement, updateCallback: () => Promise<void>, config?: TransitionConfig) => Promise<void>;
 
 /** Options of {@link morph}. */
 interface MorphOptions {
@@ -369,5 +375,169 @@ interface MorphOptions {
  */
 declare const morph: (el: Element, newContent: RenderInput, options?: MorphOptions) => void | Promise<void>;
 
-export { CAPTURE_ONLY_EVENTS, CLASS_ATTRIBUTE_NAME, COMMENT_TYPE, DANGEROUSLY_SET_INNER_HTML_ATTRIBUTE, DEFAULT_TRANSITION_CONFIG, FROM_DOM_MARKER, REF_ATTRIBUTE_NAME, XLINK_ATTRIBUTE_NAME, XMLNS_ATTRIBUTE_NAME, applyStyles, areDomNodesEqual, clearDelegatedEvents, clearDelegatedEventsDeep, domNodeToVNode, getMimeType, getRegisteredEventKeys, getRegisteredEventTypes, getRenderer, getTransitionStyles, handleLifecycleEventsForOnMount, htmlStringToVNodes, isCommentVNode, isHTML, isMarkup, isSVG, morph, nsMap, observeUnmount, onClearDelegatedEvents, parseDOM, parseEventPropName, performTransition, queueCallback, registerDelegatedEvent, removeDelegatedEvent, removeDelegatedEventByKey, renderMarkup, replaceDomWithVdom, resolveGlobals, updateDomWithVdom };
-export type { CommentVNode, DefussKey, DelegatedEventOptions, DelegatedPhase, DomAbstractionImpl, Globals, MorphMode, MorphOptions, MountHandler, ParsedEventProp, RefLike, RenderInput, TransitionConfig, TransitionStyles, TransitionType, TransitionsEasing, UnmountHandler, VNode, VNodeAttributes, VNodeChild, VNodeChildren, VNodeType, ValidChild };
+/**
+ * Why: morph() takes VNodes, and JSX is the readable way to write them, but a JSX compiler needs a runtime to call.
+ * Without one here, using `<Reactive>` or a ref meant installing the whole defuss framework for its `jsx()`. This
+ * is the smallest runtime that fits morph: it returns plain `{ type, attributes, children }` objects, calls function
+ * components at once (there is no component tree to keep, the next render is a new call) and has no state.
+ *
+ * - automatic runtime: `jsxImportSource: "defuss-morph"` (TypeScript, Bun, esbuild, Vite) imports `jsx`, `jsxs` and
+ *   `Fragment` from `defuss-morph/jsx-runtime` (`jsxDEV` from `defuss-morph/jsx-dev-runtime`);
+ * - classic runtime and pages without a build step: `h(type, props, ...children)`.
+ *
+ * VERIFIED: TypeScript, Bun, esbuild and Vite take `jsxImportSource` from tsconfig.json (probed 2026-11-01; Bun
+ * imports `jsx-dev-runtime` by default, so both subpaths exist); scripts/e2e/consumer.tsx type-checks JSX against
+ * the packed declarations in every `make e2e`.
+ */
+/** A function component: called with its props (including `children`, `ref` and `key`), returns what to render. */
+type Component<P = any> = (props: P) => RenderInput;
+type Props = {
+    [name: string]: unknown;
+    children?: unknown;
+    key?: DefussKey;
+};
+/** `<>…</>`: its children, rendered in place of the fragment. */
+declare const Fragment: (props: {
+    children?: unknown;
+}) => RenderInput;
+/**
+ * The automatic-runtime factory: `jsx(type, props, key)`. A tag name gives a VNode; a function component is called
+ * with `props` (children included). A `key` given to a component lands on the element it returns, unless that
+ * element has one, so `items.map((item) => <Row key={item.id} item={item} />)` is keyed for morph.
+ */
+declare function jsx(type: string | Component, props?: Props | null, key?: DefussKey): RenderInput;
+/** Same as {@link jsx}; compilers call it for elements with several static children. */
+declare const jsxs: typeof jsx;
+/** Same as {@link jsx}; compilers call it in development mode. The extra source arguments are ignored. */
+declare const jsxDEV: (type: string | Component, props?: Props | null, key?: DefussKey) => RenderInput;
+/**
+ * The classic factory, for `jsxFactory: "h"` and for pages without a build step:
+ * `h("button", { onClick: save }, "Save")` is `<button onClick={save}>Save</button>`.
+ */
+declare function h(type: string | Component, props?: Props | null, ...children: unknown[]): RenderInput;
+/**
+ * JSX types for `jsxImportSource: "defuss-morph"`. Loose on purpose: any tag, any attribute. A JSX expression is a
+ * `RenderInput` (a fragment is an array), and a component may return anything morph renders.
+ */
+declare namespace JSX {
+    type Element = RenderInput;
+    type ElementType = string | Component;
+    interface ElementChildrenAttribute {
+        children: {};
+    }
+    interface IntrinsicAttributes {
+        key?: DefussKey;
+    }
+    interface IntrinsicElements {
+        [tagName: string]: {
+            [attribute: string]: any;
+        };
+    }
+}
+
+/**
+ * Why a plain object and not defuss's store-backed Ref: morph only ever assigns `current`, and the forwardRef
+ * pattern needs one free slot for a component's API, so `{ current, state }` is all a ref has to be; defuss's richer
+ * Ref stays assignable to it (RefLike). VERIFIED: src/reactive.test.ts keeps `current` on the same node across
+ * morphs and drives a component through `ref.state`.
+ *
+ * A reference to a rendered element. morph sets `current` when it creates or patches the element that carries
+ * `ref={...}`; a morph that keeps the element keeps `current` pointing at the same node. `state` is free for the
+ * component that owns the element: the forwardRef pattern puts the component's API there, for its parent to call.
+ */
+interface Ref<T extends Element = HTMLElement, S = unknown> extends RefLike {
+    current: T | null;
+    state?: S;
+}
+/**
+ * Creates an empty {@link Ref}. `current` stays `null` until morph renders the element that carries it, so read it
+ * in an event handler, in `onMount` or after the morph call, not in the component body.
+ */
+declare const createRef: <T extends Element = HTMLElement, S = unknown>(state?: S) => Ref<T, S>;
+/** True for objects with a `current` property, the shape morph assigns refs to. */
+declare const isRef: (value: unknown) => value is RefLike;
+
+/**
+ * Why: re-rendering a region whenever a store changes is the loop most pages need, and morph makes the naive
+ * version correct: render the whole region again and morph it in, and every node that stays keeps its focus, typed
+ * input and listeners. Three entry points share one core, as in defuss: `reactive()` for a known element or ref,
+ * `<Reactive />` for a JSX tree, and defuss-query's `df$(selector).reactive()` for markup already in the page.
+ */
+/**
+ * What `reactive()` subscribes to: a defuss-store store (`createStore()`, `computed()`), or anything whose
+ * `subscribe(listener)` returns an unsubscribe function or an object with `unsubscribe()`.
+ */
+interface Subscribable {
+    subscribe(listener: (...args: any[]) => unknown): unknown;
+}
+/** Configuration of {@link reactive} and {@link Reactive}. */
+interface ReactiveConfig {
+    /** One store, or several: a change in any of them re-renders. */
+    store: Subscribable | readonly Subscribable[];
+    /** Returns the region's next content: JSX/VNodes or an HTML string. Keep it pure; it may run more often than the stores change. */
+    render: () => RenderInput;
+    /** Runs once, when the region is disposed (the returned function, `signal` or the `<Reactive>` element's unmount). */
+    cleanup?: () => void;
+    /** Disposes the region when aborted: the way to end a `df$(...).reactive()` binding, which returns the selection. */
+    signal?: AbortSignal;
+}
+/** Where {@link reactive} renders: an element, a ref to one, or a list of elements (a defuss-query selection, a NodeList). */
+type ReactiveTarget = Element | RefLike | ArrayLike<Element>;
+/**
+ * Renders `config.render()` into `target` now, then again whenever a store changes, by morphing it in: nodes that
+ * stay keep their identity, focus, typed input and listeners. The first render runs before the subscriptions start.
+ * Returns the dispose function: it unsubscribes from every store and runs `config.cleanup` once.
+ *
+ * @example
+ * ```ts
+ * import { reactive } from "defuss-morph";
+ * import { createStore } from "defuss-store";
+ *
+ * const cart = createStore({ count: 0 });
+ * const dispose = reactive({ store: cart, render: () => `<p>${cart.value.count} items</p>` }, cartEl);
+ * cart.set("count", 2); // <p>2 items</p>, the same <p> as before
+ * ```
+ */
+declare function reactive(config: ReactiveConfig, target: ReactiveTarget): () => void;
+/** Props of {@link Reactive}: the {@link ReactiveConfig}, the wrapper's tag and any attribute for the wrapper. */
+interface ReactiveProps extends Omit<ReactiveConfig, "signal"> {
+    /** The wrapper element's tag. Default: `"div"`. */
+    tag?: string;
+    /** Set to the wrapper element. */
+    ref?: RefLike;
+    [attribute: string]: unknown;
+}
+/**
+ * A JSX component that re-renders its content whenever a store changes. It renders a wrapper element (`tag`,
+ * default `div`) whose children are `render()`; other props go to the wrapper. The subscription starts when the
+ * wrapper is mounted and ends when it leaves the document, which also runs `cleanup`. A parent re-render passes the
+ * latest `render` and `store`, and the children it produces are morphed in like any other render.
+ *
+ * @example
+ * ```tsx
+ * import { Reactive } from "defuss-morph";
+ * import { createStore } from "defuss-store";
+ *
+ * const counter = createStore({ count: 0 });
+ *
+ * <Reactive tag="section" store={counter} render={() => (
+ *   <button onClick={() => counter.set("count", counter.value.count + 1)}>{counter.value.count}</button>
+ * )} />
+ * ```
+ */
+declare function Reactive(props: ReactiveProps): VNode;
+/** The `.reactive()` method {@link installReactive} adds to every defuss-query selection. */
+interface ReactiveQueryMethod {
+    /** Calls {@link reactive} with this selection as the target and returns the selection; end it with `config.signal`. */
+    reactive(config: ReactiveConfig): this;
+}
+/**
+ * Adds `.reactive(config)` to defuss-query's selections (`df$.fn`, the shared prototype), so markup already in the
+ * page becomes reactive by selector: `df$("#cart").reactive({ store, render })`. Idempotent; returns `df$`. The CDN
+ * bundle calls it itself when it loads after defuss-query; with defuss-morph loaded first, call
+ * `df$.installReactive(df$)` once defuss-query has loaded.
+ */
+declare const installReactive: <Q>(df$: Q) => Q;
+
+export { CAPTURE_ONLY_EVENTS, CLASS_ATTRIBUTE_NAME, COMMENT_TYPE, DANGEROUSLY_SET_INNER_HTML_ATTRIBUTE, DEFAULT_TRANSITION_CONFIG, FROM_DOM_MARKER, Fragment, JSX, REF_ATTRIBUTE_NAME, Reactive, XLINK_ATTRIBUTE_NAME, XMLNS_ATTRIBUTE_NAME, applyStyles, areDomNodesEqual, clearDelegatedEvents, clearDelegatedEventsDeep, createRef, domNodeToVNode, getMimeType, getRegisteredEventKeys, getRegisteredEventTypes, getRenderer, getTransitionStyles, h, handleLifecycleEventsForOnMount, htmlStringToVNodes, installReactive, isCommentVNode, isHTML, isMarkup, isRef, isSVG, jsx, jsxDEV, jsxs, morph, nsMap, observeUnmount, onClearDelegatedEvents, parseDOM, parseEventPropName, performTransition, queueCallback, reactive, registerDelegatedEvent, removeDelegatedEvent, removeDelegatedEventByKey, renderMarkup, replaceDomWithVdom, resolveGlobals, templateContent, updateDomWithVdom };
+export type { CommentVNode, Component, DefussKey, DelegatedEventOptions, DelegatedPhase, DomAbstractionImpl, Globals, MorphMode, MorphOptions, MountHandler, ParsedEventProp, ReactiveConfig, ReactiveProps, ReactiveQueryMethod, ReactiveTarget, Ref, RefLike, RenderInput, Subscribable, TransitionConfig, TransitionStyles, TransitionType, TransitionsEasing, UnmountHandler, VNode, VNodeAttributes, VNodeChild, VNodeChildren, VNodeType, ValidChild };

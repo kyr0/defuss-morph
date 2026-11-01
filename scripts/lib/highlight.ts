@@ -19,7 +19,7 @@ import { createHighlighter, getTokenStyleObject, stringifyTokenStyle, type Theme
  */
 
 const THEME = 'github-dark-default';
-const LANGS = ['html', 'ts', 'sh'] as const;
+const LANGS = ['html', 'ts', 'tsx', 'js', 'json', 'sh'] as const;
 type Lang = (typeof LANGS)[number];
 
 let highlighter: ReturnType<typeof createHighlighter> | undefined;

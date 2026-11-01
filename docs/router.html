@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>defuss-morph · a routed demo app</title>
+  <meta name="description" content="A small app routed by defuss-dom-router and rendered by defuss-morph; the website shows it in a frame.">
+  <meta name="robots" content="noindex">
+  <script src="assets/frame-theme.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/defuss-shadcn@0.9.11/dist/components/core.min.css" integrity="sha384-qUQCm/MM2DNkdT3uEdx8Mpocj+GwXlgLat0FnWv657c16tHWOouZFT2nV7kg5pBE" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/defuss-shadcn@0.9.11/dist/components/all.min.css" integrity="sha384-D6ChEYfIRnfJpWB03vSS4b4b1ZdHsnCNUwg2VBFrBkjDVHIVvdVDXaJ1M2hFAdK2" crossorigin="anonymous">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; padding: 1rem; line-height: 1.6; background: var(--background); color: var(--foreground); font-family: var(--font-sans); }
+    .dm-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .address { display: block; margin-block-end: .75rem; padding: .375rem .75rem; border: 1px solid var(--border); border-radius: 999px; background: var(--muted); color: var(--muted-foreground); font: .8125rem/1.5 var(--font-mono, ui-monospace, monospace); overflow-wrap: anywhere; }
+    .address b { color: var(--foreground); font-weight: 600; }
+    main { margin-block-start: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); }
+    h2 { margin: 0 0 .5rem; font-size: 1.125rem; }
+    p { margin: .5rem 0; color: var(--muted-foreground); }
+  </style>
+  <!-- The demo imports packages by name; make build writes this map (scripts/lib/demos.ts). -->
+  <script type="importmap">
+  {
+    "imports": {
+      "defuss-morph": "./assets/defuss-morph.mjs",
+      "defuss-morph/jsx-runtime": "./assets/defuss-morph.mjs",
+      "defuss-query": "./assets/vendor/defuss-query/index.js",
+      "defuss-store": "./assets/vendor/defuss-store/browser.js",
+      "defuss-i18n": "./assets/vendor/defuss-i18n/index.js",
+      "defuss-dom-router": "./assets/vendor/defuss-dom-router/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header data-ref="bar"></header>
+  <main data-ref="outlet"></main>
+  <script type="module" src="assets/router-demo.js"></script>
+</body>
+</html>
