@@ -23,5 +23,8 @@ describe("the website's release version", () => {
   it("is the package version in the hero badge and the footer note", () => {
     expect(/data-size="sm">v(\d+\.\d+\.\d+)<\/span>/.exec(page)?.[1]).toBe(version);
     expect(/class="mk-cta-note">MIT licensed · (\d+\.\d+\.\d+) ·/.exec(page)?.[1]).toBe(version);
+    const npm = [...page.matchAll(/href="https:\/\/www\.npmjs\.com\/package\/defuss-morph" aria-label="defuss-morph on npm, version (\d+\.\d+\.\d+)">.*?data-size="xs">v(\d+\.\d+\.\d+)<\/span>/g)];
+    expect(npm.length).toBe(2); // the header and the menu sheet
+    expect(npm.flatMap((m) => [m[1], m[2]])).toEqual(Array(4).fill(version));
   });
 });

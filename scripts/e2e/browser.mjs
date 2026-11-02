@@ -10,6 +10,7 @@ import { createStaticServer } from '../serve.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 const OUT = join(ROOT, 'output');
+const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
 const log = (level, message) => console.log(`${new Date().toISOString()} ${level} e2e.browser ${message}`);
 
 // the dev server's static handler (scripts/serve.mjs) on a free port
@@ -456,6 +457,14 @@ try {
     badges: document.querySelectorAll('.mk-section-header-copy > .badge.dm-eyebrow > svg use, .mk-features-head > .badge.dm-eyebrow > svg use').length,
     missingIcons: [...document.querySelectorAll('use[href^="#"]')].map((u) => u.getAttribute('href')).filter((href) => !document.querySelector(href)),
   }));
+  const misaligned = await page.evaluate(() => [...document.querySelectorAll('.badge.dm-eyebrow')].flatMap((badge) => {
+    const title = badge.parentElement.querySelector('h2');
+    const [b, t] = [badge.getBoundingClientRect(), title.getBoundingClientRect()];
+    const centred = getComputedStyle(title).textAlign === 'center';
+    const off = centred ? Math.abs(b.left + b.width / 2 - (t.left + t.width / 2)) : Math.abs(b.left - t.left);
+    return off > 2 ? [`${badge.textContent}: ${centred ? 'centre' : 'left edge'} off by ${off.toFixed(0)} px`] : [];
+  }));
+  check('docs: each section badge lines up with its title (centred over a centred title, else at its left edge)', misaligned.length === 0, misaligned.join('; '));
   check('docs: every section header starts with a badge with an icon, and every icon exists',
     eyebrows.headers > 5 && eyebrows.badges === eyebrows.headers && eyebrows.missingIcons.length === 0, JSON.stringify(eyebrows));
 
@@ -488,6 +497,15 @@ try {
   const cut = await page.$$eval('.tab-trigger', (tabs) => tabs.filter((t) => t.scrollWidth > t.clientWidth).map((t) => t.textContent));
   check('docs: no tab label is cut at 375 px', cut.length === 0, cut.join(', '));
   check('docs: no horizontal scroll at 375 px', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  // the header at the widths around its breakpoints (menu up to 45rem, nav links, the npm button from 54rem)
+  const crowded = [];
+  for (const width of [375, 640, 664, 700, 740, 744, 800, 884, 888, 1024, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    if (await page.evaluate(() => { const inner = document.querySelector('.mk-header-inner'); return inner.scrollWidth > inner.clientWidth; })) crowded.push(width);
+  }
+  check('docs: the header fits from 375 to 1,440 px', crowded.length === 0, `overflows at ${crowded.join(', ')} px`);
+  const npm = await page.evaluate(() => [...document.querySelectorAll('a[href="https://www.npmjs.com/package/defuss-morph"]')].map((a) => `${a.getClientRects().length > 0}:${a.textContent.replace(/\s+/g, ' ').trim()}`));
+  check('docs: the header and the menu sheet link npm with the version', npm.length === 2 && npm[0] === `true:npm v${VERSION}` && npm[1].endsWith(`:npm v${VERSION}`), npm.join(' | '));
   await page.setViewportSize({ width: 1280, height: 900 });
   check('docs: no console errors or failed requests', problems.length === 0, problems.join('; '));
   await page.close();

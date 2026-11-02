@@ -6,7 +6,6 @@ Agents append `<UTC ISO> s=<session> LESSON <VAE-DIALECT>` only for a falsified 
 Session start injects the 3 newest open entries: LESSON, FINDING learn=none, FAIL without a later DONE.
 Wrap: EVERY lead becomes a test | .vae/VERIFY.py rule | one MEMORY line with BC, then delete; OR delete BC evidence. -->
 
-2026-10-31T17:16:27Z s=7952b03c DONE fp=1c82ba717f12 cov=97.5% paths=.github/workflows/verify.yml,AGENTS.md,ARCH.md,Makefile(+51)
 2026-10-31T17:16:27Z s=7952b03c FINDING src/renderer.ts:handleLifecycleEventsForOnMount learn=test: renderer.test.ts 'fires onUnmount once, with the latest handler, after in-place morphs' + re-arm test
 2026-10-31T17:16:27Z s=7952b03c FINDING src/renderer.ts:setAttribute(ref) learn=test: renderer.test.ts 'fires onUnmount declared before ref'
 2026-10-31T17:16:27Z s=7952b03c FINDING src/html.ts:htmlStringToVNodes learn=test: html.test.ts context-dependent tags + morph-diff.test.ts table rows (both environments)
@@ -99,3 +98,11 @@ Wrap: EVERY lead becomes a test | .vae/VERIFY.py rule | one MEMORY line with BC,
 2026-11-01T20:38:20Z s=97c0601e FINDING scripts/e2e/browser.mjs library block learn=test: output/e2e-browser.json
 2026-11-01T20:38:20Z s=97c0601e FINDING make bench run overlapped by the Stop hook's make verify learn=memory: .vae/MEMORY.md line: run make bench in the foreground
 2026-11-01T20:38:20Z s=97c0601e FINDING scripts/lib/bench-page.ts note learn=test: bench-page.test.ts expects 'Firefox and WebKit count whole milliseconds.'
+2026-11-01T21:06:53Z s=97c0601e DONE fp=f6ecdfd38875 cov=97.7% paths=.claude-plugin/marketplace.json,.claude-plugin/plugin.json,.codex-plugin/plugin.json,AGENTS.md(+78)
+2026-11-01T21:06:53Z s=97c0601e FINDING docs/assets/site.css:.dm-eyebrow learn=test: browser.mjs 'each section badge lines up with its title'
+2026-11-01T23:03:55Z s=97c0601e DONE fp=430815389323 cov=97.7% paths=.claude-plugin/marketplace.json,.claude-plugin/plugin.json,.codex-plugin/plugin.json,AGENTS.md(+78)
+2026-11-01T23:03:55Z s=97c0601e FINDING docs/index.html header + sheet: npm link learn=test: version.test.ts pins both badges and labels to package.json; browser.mjs checks both links and their version
+2026-11-01T23:03:55Z s=97c0601e FINDING docs/assets/site.css header breakpoint learn=test: browser.mjs 'the header fits from 375 to 1,440 px' checks the widths around each breakpoint
+2026-11-02T01:08:03Z s=97c0601e FAIL prose
+2026-11-02T01:10:50Z s=97c0601e DONE fp=458f3e9b68a5 cov=97.7% paths=.claude-plugin/marketplace.json,.claude-plugin/plugin.json,.codex-plugin/plugin.json,AGENTS.md(+78)
+2026-11-02T01:10:50Z s=97c0601e FINDING docs/index.html:1007 T02 learn=verifier: the prose gate rule T02 already catches it

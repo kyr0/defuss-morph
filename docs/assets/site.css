@@ -178,8 +178,19 @@
   .dm-bench-code .mk-code-block pre[data-numbers] code > span { padding-inline-start: 3rem; text-indent: -3rem; }
   @media (max-width: 60rem) { .dm-bench { grid-template-columns: minmax(0, 1fr); } }
   /* section eyebrows as badges; the recorded benchmark and the coverage rings */
-  .dm-eyebrow { align-self: flex-start; gap: .375rem; }
-  .mk-features-head .dm-eyebrow, .mk-features .dm-eyebrow { align-self: center; }
+  /* the header's npm button needs room: VERIFIED (Chromium, 2026-11-01): with it, the header overflowed between 680 and
+     840 px of viewport, so it shows from a 54rem header (about 890 px); narrower, the menu sheet has it */
+  .mk-header-actions .dm-header-npm { display: none; }
+  @container mk-header (width >= 54rem) { .mk-header-actions .dm-header-npm { display: inline-flex; } }
+  /* defuss-shadcn shows the nav links from a 40rem header, but with this page's links and actions they first fit at
+     about 43rem: VERIFIED (Chromium, 2026-11-01): Install stuck out by up to 30 px between 664 and 708 px of viewport.
+     Up to 45rem the header keeps its narrow form, the menu button and the sheet */
+  @container mk-header (width >= 40rem) and (width < 45rem) {
+    .mk-header-nav, .mk-header-actions .mk-header-wide { display: none; }
+    .mk-header-menu { display: inline-flex; }
+  }
+  /* no align-self: the header's own alignment places the badge, left or centred (data-align="center") */
+  .dm-eyebrow { gap: .375rem; }
   .dm-subtitle { margin: 2.5rem 0 1rem; font-size: 1.125rem; font-weight: 600; }
   .dm-bench-recorded + .dm-figcaption, .dm-coverage + .dm-figcaption { margin-block-start: .75rem; }
   .dm-tab-version { color: var(--muted-foreground); font-weight: 400; font-variant-numeric: tabular-nums; }
