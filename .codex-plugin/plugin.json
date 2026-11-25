@@ -1,7 +1,7 @@
 {
   "name": "defuss-morph",
   "description": "Write DOM updates with defuss-morph: morph HTML strings or JSX into the live DOM so focus, typed input and listeners survive; store-driven reactive rendering, refs and forwardRef; defuss-query, defuss-store, defuss-i18n and defuss-dom-router together.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": {
     "name": "Aron Homberg",
     "url": "https://github.com/kyr0"

@@ -128,6 +128,19 @@ describe("getRenderer", () => {
       expect(el.hasAttribute("title")).toBe(false);
     });
 
+    it("removes the attribute for null instead of writing \"null\"", () => {
+      const { el, r } = setup();
+      r.setAttribute("title", "t", el);
+      r.setAttribute("title", null, el);
+      expect(el.hasAttribute("title")).toBe(false);
+      r.setAttribute("className", "a", el);
+      r.setAttribute("className", null, el);
+      expect(el.hasAttribute("class")).toBe(false);
+      r.setAttribute("key", "k", el);
+      r.setAttribute("key", null, el);
+      expect((el as any)._defussKey).toBeUndefined();
+    });
+
     it("ignores the dangerouslySetInnerHTML pseudo-attribute", () => {
       const { el, r } = setup();
       r.setAttribute("dangerouslySetInnerHTML", { __html: "x" }, el);

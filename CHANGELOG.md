@@ -2,6 +2,15 @@
 
 Each release of the npm package `defuss-morph`, newest first. A release bumps the version here, in `package.json`, in the plugin manifests and the skill, and on the website; `scripts/lib/version.test.ts` checks that they agree.
 
+## 0.3.1 (2026-11-25)
+
+### Fixed
+
+- An attribute set to `null` was written as the text `"null"` (`data-unread="null"`) instead of being removed. `null` now removes it, also a namespaced SVG attribute such as `xlinkHref`.
+- `ref={null}` threw `TypeError: Cannot set properties of null`; a null ref now sets nothing.
+- A handler set to `null` or `undefined` (`onClick={enabled ? save : null}`) kept the handler of the previous render; it is now unregistered.
+- An attribute set to `undefined` kept its previous value in a full morph, while leaving it out removed it. Both now remove it, as in JSX. Diff mode keeps both, as before.
+
 ## 0.3.0 (2026-11-01)
 
 ### Added

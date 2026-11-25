@@ -293,13 +293,21 @@ function createDomFromChild(
 /********************************************************
  * 4) Patch an element node in place (attributes + children)
  ********************************************************/
+/**
+ * Whether the next render declares an attribute. An `undefined` value counts as left out, as in JSX, where
+ * `title={cond ? "x" : undefined}` and leaving `title` out mean the same; `null` is declared and removes it
+ * (renderer `setAttribute`). Diff mode never removes undeclared attributes, so there `undefined` keeps the value.
+ */
+const declares = (attributes: Record<string, unknown>, name: string): boolean =>
+  Object.hasOwn(attributes, name) && attributes[name] !== undefined;
+
 function shouldPreserveFormStateAttribute(
   el: Element,
   attrName: string,
   vnode: VNode<VNodeAttributes>,
 ): boolean {
   const tag = el.tagName.toLowerCase();
-  const hasExplicit = Object.hasOwn(vnode.attributes ?? {}, attrName);
+  const hasExplicit = declares(vnode.attributes ?? {}, attrName);
 
   if (hasExplicit) return false;
 
@@ -336,13 +344,12 @@ function patchElementInPlace(
     // treat class/className as equivalent
     if (
       name === "class" &&
-      (Object.hasOwn(nextAttrs, "class") ||
-        Object.hasOwn(nextAttrs, "className"))
+      (declares(nextAttrs, "class") || declares(nextAttrs, "className"))
     ) {
       continue;
     }
 
-    if (!Object.hasOwn(nextAttrs, name)) {
+    if (!declares(nextAttrs, name)) {
       if (shouldPreserveFormStateAttribute(el, name, vnode)) continue;
       el.removeAttribute(name);
     }
@@ -362,7 +369,8 @@ function patchElementInPlace(
     const nextEventKeys = new Set<string>();
     for (const propName of Object.keys(nextAttrs)) {
       const parsed = parseEventPropName(propName);
-      if (parsed) {
+      // a handler set to null or undefined is no handler: the registered one is removed
+      if (parsed && typeof (nextAttrs as Record<string, unknown>)[propName] === "function") {
         const phase = parsed.capture ? "capture" : "bubble";
         nextEventKeys.add(`${parsed.eventType}:${phase}`);
       }

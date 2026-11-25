@@ -3,7 +3,7 @@ name: defuss-morph
 description: Write DOM updates with defuss-morph - morph an HTML string or JSX into the live DOM instead of assigning innerHTML, so focus, typed input and event listeners survive; re-render a region from a store with reactive(), <Reactive> or df$(selector).reactive(); refs and the forwardRef pattern; defuss-query, defuss-store, defuss-i18n and defuss-dom-router together. Use when code renders or updates HTML in the browser or on a server with happy-dom, in a bundled app or a standalone HTML page, without a virtual DOM.
 ---
 
-# defuss-morph 0.3.0 - Agent Skill
+# defuss-morph 0.3.1 - Agent Skill
 
 defuss-morph compares new content (an HTML string, JSX or VNodes) with the children of a live element and patches only the difference with native DOM calls. A node that exists before and after stays the same node, so its focus, caret, typed value, scroll position and listeners survive. There is no component tree, no scheduler and no virtual DOM: each call reads the live DOM as the previous state.
 
@@ -38,7 +38,7 @@ Module scripts run in document order, so the inline module sees both. Without a 
 1. **Re-render by morphing the complete next state** into a container: `morph(container, next)`. Never assign `innerHTML` to update a region; it rebuilds every node and loses focus, typed input and listeners.
 2. **Key every list item** with a stable ID: `key="..."` in HTML, `key={item.id}` in JSX, never the index. Keyed nodes move; unkeyed siblings match by tag in order and can swap content.
 3. **A component's `key` lands on the element it returns**, so `items.map((item) => <Row key={item.id} item={item} />)` is keyed.
-4. **Markup that omits something means "leave it alone".** An HTML string cannot uncheck a box, clear a typed `value` or remove a handler. To set such state, send a VNode: `morph(form, [{ attributes: { id: "terms", checked: false } }], { diff: true })`.
+4. **Markup that omits something means "leave it alone".** An HTML string cannot uncheck a box, clear a typed `value` or remove a handler. To set such state, send a VNode: `morph(form, [{ attributes: { id: "terms", checked: false } }], { diff: true })`. In a VNode, `null` removes an attribute or handler, and `undefined` counts as left out (since 0.3.1; before, `null` was written as `"null"`).
 5. **Escape text you put into an HTML string**, or pass it as a VNode child (`h("li", null, userText)`, defuss-query's `.text()`). morph renders its input and does not sanitize it; a `<script>` in an HTML string runs.
 6. **Diff mode (`{ diff: true }`) patches and appends only**: every item needs a `key` or `id`; it never removes or reorders. Use a full `morph()` for that.
 7. **`morph()` is synchronous**, unless it has a `transition` option: then it returns a Promise. `await` it before the next animated morph.

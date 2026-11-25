@@ -426,6 +426,25 @@ const getRenderer = (document) => {
     setAttribute: (name, value, domElement) => {
       if (typeof value === "undefined") return;
       if (name === DANGEROUSLY_SET_INNER_HTML_ATTRIBUTE) return;
+      if (value === null) {
+        if (name === "key") {
+          delete domElement._defussKey;
+          return;
+        }
+        if (name === REF_ATTRIBUTE_NAME || parseEventPropName(name)) return;
+        const attr = name === "className" ? CLASS_ATTRIBUTE_NAME : name;
+        const nsEnd = attr.match(/[A-Z]/)?.index;
+        if (renderer.hasElNamespace(domElement) && nsEnd) {
+          const ns = attr.substring(0, nsEnd).toLowerCase();
+          const namespace = nsMap[ns];
+          if (namespace && (ns === XLINK_ATTRIBUTE_NAME || ns === XMLNS_ATTRIBUTE_NAME)) {
+            domElement.removeAttributeNS(namespace, attr.substring(nsEnd).toLowerCase());
+            return;
+          }
+        }
+        domElement.removeAttribute(attr);
+        return;
+      }
       if (name === "key") {
         domElement._defussKey = String(value);
         return;
@@ -667,9 +686,10 @@ function createDomFromChild(child, globals) {
   const nodes = Array.isArray(created) ? created : [created];
   return nodes.filter(Boolean);
 }
+const declares = (attributes, name) => Object.hasOwn(attributes, name) && attributes[name] !== void 0;
 function shouldPreserveFormStateAttribute(el, attrName, vnode) {
   const tag = el.tagName.toLowerCase();
-  const hasExplicit = Object.hasOwn(vnode.attributes ?? {}, attrName);
+  const hasExplicit = declares(vnode.attributes ?? {}, attrName);
   if (hasExplicit) return false;
   if (tag === "input") return attrName === "value" || attrName === "checked";
   if (tag === "textarea") return attrName === "value";
@@ -684,10 +704,10 @@ function patchElementInPlace(el, vnode, globals, mergeAttributes = false) {
     const { name } = attr;
     if (name === "key") continue;
     if (name.startsWith("on")) continue;
-    if (name === "class" && (Object.hasOwn(nextAttrs, "class") || Object.hasOwn(nextAttrs, "className"))) {
+    if (name === "class" && (declares(nextAttrs, "class") || declares(nextAttrs, "className"))) {
       continue;
     }
-    if (!Object.hasOwn(nextAttrs, name)) {
+    if (!declares(nextAttrs, name)) {
       if (shouldPreserveFormStateAttribute(el, name, vnode)) continue;
       el.removeAttribute(name);
     }
@@ -698,7 +718,7 @@ function patchElementInPlace(el, vnode, globals, mergeAttributes = false) {
     const nextEventKeys = /* @__PURE__ */ new Set();
     for (const propName of Object.keys(nextAttrs)) {
       const parsed = parseEventPropName(propName);
-      if (parsed) {
+      if (parsed && typeof nextAttrs[propName] === "function") {
         const phase = parsed.capture ? "capture" : "bubble";
         nextEventKeys.add(`${parsed.eventType}:${phase}`);
       }

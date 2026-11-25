@@ -271,10 +271,33 @@ export const getRenderer = (document: Document): DomAbstractionImpl => {
     },
 
     setAttribute: (name: string, value: any, domElement: Element) => {
-      // attributes not set (undefined) are ignored; use null value to reset an attributes state
+      // undefined is "not set": nothing to write (a morph removes an attribute the next render leaves undefined)
       if (typeof value === "undefined") return;
 
       if (name === DANGEROUSLY_SET_INNER_HTML_ATTRIBUTE) return;
+
+      // null removes: the attribute (namespaced on SVG), the internal key; a null ref or handler sets nothing,
+      // and a morph removes the handler a previous render registered. Before, null was written as "null" and a
+      // null ref threw.
+      if (value === null) {
+        if (name === "key") {
+          delete (domElement as HTMLElement & { _defussKey?: string })._defussKey;
+          return;
+        }
+        if (name === REF_ATTRIBUTE_NAME || parseEventPropName(name)) return;
+        const attr = name === "className" ? CLASS_ATTRIBUTE_NAME : name;
+        const nsEnd = attr.match(/[A-Z]/)?.index;
+        if (renderer.hasElNamespace(domElement) && nsEnd) {
+          const ns = attr.substring(0, nsEnd).toLowerCase();
+          const namespace = nsMap[ns as keyof typeof nsMap];
+          if (namespace && (ns === XLINK_ATTRIBUTE_NAME || ns === XMLNS_ATTRIBUTE_NAME)) {
+            domElement.removeAttributeNS(namespace, attr.substring(nsEnd).toLowerCase());
+            return;
+          }
+        }
+        domElement.removeAttribute(attr);
+        return;
+      }
 
       // internal list key: store on element, do not serialize into DOM
       if (name === "key") {

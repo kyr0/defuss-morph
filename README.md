@@ -134,7 +134,7 @@ morph(
 );
 ```
 
-Unlike an HTML string, a VNode carries JavaScript values: explicit booleans (`checked: false`), live values (`value: ""`), event handlers (`onClick={...}`), refs and the lifecycle hooks `onMount` and `onUnmount`. Controlled state and JSX event props only work through VNodes. `onMount` runs in a microtask after the element is inserted, and again after each morph that patches it with an `onMount`. `onUnmount` runs once when the element leaves the document, with the handler of the latest render, and receives the element.
+Unlike an HTML string, a VNode carries JavaScript values: explicit booleans (`checked: false`), live values (`value: ""`), event handlers (`onClick={...}`), refs and the lifecycle hooks `onMount` and `onUnmount`. An attribute set to `null` is removed, a handler set to `null` is unregistered, and `undefined` means the same as leaving the attribute out: `title={done ? "Done" : undefined}` removes the title once `done` is false. In diff mode an attribute left out or `undefined` keeps its value. Controlled state and JSX event props only work through VNodes. `onMount` runs in a microtask after the element is inserted, and again after each morph that patches it with an `onMount`. `onUnmount` runs once when the element leaves the document, with the handler of the latest render, and receives the element.
 
 ### JSX runtime
 
@@ -391,10 +391,10 @@ Zero-build pages that load the freshly built `dist/all.js` (the two reactive one
 <!-- bundle-size:start -->
 | File | Size | Gzipped | Purpose |
 | --- | ---: | ---: | --- |
-| `index.mjs` | 47.7 kB | 12.1 kB | ESM/library build; used when installing via npm/bun |
-| `index.cjs` | 49.0 kB | 12.3 kB | CommonJS build |
-| `all.js` | 49.3 kB | 12.3 kB | Self-contained ESM bundle for CDN and `<script>` use, readable for debugging; registers `df$` |
-| `all.min.js` | 23.2 kB | **8.5 kB** | Minified `all.js`; the file to load from a CDN when no bundler is used |
+| `index.mjs` | 48.6 kB | 12.3 kB | ESM/library build; used when installing via npm/bun |
+| `index.cjs` | 49.9 kB | 12.4 kB | CommonJS build |
+| `all.js` | 50.2 kB | 12.5 kB | Self-contained ESM bundle for CDN and `<script>` use, readable for debugging; registers `df$` |
+| `all.min.js` | 23.5 kB | **8.6 kB** | Minified `all.js`; the file to load from a CDN when no bundler is used |
 <!-- bundle-size:end -->
 
 `index.cjs` serves `require()` on older toolchains (CommonJS Jest configurations, bundlers that resolve `main`). Node 20.19 and 22.12 or newer can `require()` the ESM build directly.

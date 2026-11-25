@@ -6,12 +6,6 @@ Agents append `<UTC ISO> s=<session> LESSON <VAE-DIALECT>` only for a falsified 
 Session start injects the 3 newest open entries: LESSON, FINDING learn=none, FAIL without a later DONE.
 Wrap: EVERY lead becomes a test | .vae/VERIFY.py rule | one MEMORY line with BC, then delete; OR delete BC evidence. -->
 
-2026-10-31T17:16:27Z s=7952b03c FINDING src/renderer.ts:handleLifecycleEventsForOnMount learn=test: renderer.test.ts 'fires onUnmount once, with the latest handler, after in-place morphs' + re-arm test
-2026-10-31T17:16:27Z s=7952b03c FINDING src/renderer.ts:setAttribute(ref) learn=test: renderer.test.ts 'fires onUnmount declared before ref'
-2026-10-31T17:16:27Z s=7952b03c FINDING src/html.ts:htmlStringToVNodes learn=test: html.test.ts context-dependent tags + morph-diff.test.ts table rows (both environments)
-2026-10-31T17:16:27Z s=7952b03c FINDING src/renderer.ts:createElementOrElements learn=test: renderer.test.ts + morph-edge.test.ts 'renders text input as a text node'
-2026-10-31T17:16:27Z s=7952b03c FINDING src/morph.ts:replaceDomWithVdom learn=test: morph-edge.test.ts 'clears delegated handlers and runs clear hooks for removed elements'
-2026-10-31T17:16:27Z s=7952b03c FINDING src/transitions.ts:performCrossfade learn=test: transitions.browser.test.ts 'places the snapshot over the element on a scrolled page'
 2026-10-31T17:16:27Z s=7952b03c FINDING src/index.ts:morph learn=test: transitions.test.ts detached root returns a Promise
 2026-10-31T17:16:27Z s=7952b03c FINDING src/renderer.ts:createElement catch learn=verifier: .vae/VERIFY.py rule src.no-console
 2026-10-31T17:16:27Z s=7952b03c FINDING src/*.test.ts vi.fn/vi.spyOn learn=verifier: existing tests.no-mocks rule now passes
@@ -106,3 +100,9 @@ Wrap: EVERY lead becomes a test | .vae/VERIFY.py rule | one MEMORY line with BC,
 2026-11-02T01:08:03Z s=97c0601e FAIL prose
 2026-11-02T01:10:50Z s=97c0601e DONE fp=458f3e9b68a5 cov=97.7% paths=.claude-plugin/marketplace.json,.claude-plugin/plugin.json,.codex-plugin/plugin.json,AGENTS.md(+78)
 2026-11-02T01:10:50Z s=97c0601e FINDING docs/index.html:1007 T02 learn=verifier: the prose gate rule T02 already catches it
+2026-11-25T06:46:29Z s=dcdb118f DONE fp=49bae680de86 cov=97.8% paths=.claude-plugin/plugin.json,.codex-plugin/plugin.json,CHANGELOG.md,README.md(+10)
+2026-11-25T06:46:29Z s=dcdb118f FINDING src/renderer.ts:setAttribute null learn=test: VERIFIED: src/morph.test.ts 'null attributes' failed before (5/5 red) and passes; renderer.test.ts unit test.
+2026-11-25T06:46:29Z s=dcdb118f FINDING src/renderer.ts:ref null learn=test: VERIFIED: 'accepts a null ref' failed with the TypeError before the fix.
+2026-11-25T06:46:29Z s=dcdb118f FINDING src/morph.ts:nextEventKeys learn=test: VERIFIED: 'removes an event handler whose next render is null' saw 1 call before, 0 after.
+2026-11-25T06:46:29Z s=dcdb118f FINDING src/morph.ts:declares learn=test: VERIFIED: tests for full vs diff mode and for an input's typed value; all 1953 tests pass in happy-dom, Chromium and Firefox.
+2026-11-25T06:46:29Z s=dcdb118f FINDING package.json + manifests + docs/index.html + SKILL.md learn=test: VERIFIED: scripts/lib/version.test.ts and the skill test pass; make build's check-dist reports fresh artifacts.

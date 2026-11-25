@@ -413,3 +413,75 @@ describe("morph(el, html)", () => {
     expect(el.querySelector("p")!.textContent).toBe("yo");
   });
 });
+
+describe("null attributes", () => {
+  const render = (el: HTMLElement, attributes: Record<string, unknown>, type = "div") =>
+    updateDomWithVdom(el, { type, attributes, children: [] } as VNode, globals);
+
+  it("creates no attribute for null", () => {
+    const el = container();
+    render(el, { id: "a", title: null, className: null });
+    const div = el.querySelector("#a")!;
+    expect(div.hasAttribute("title")).toBe(false);
+    expect(div.hasAttribute("class")).toBe(false);
+  });
+
+  it("removes an attribute when the next render sets it to null, and adds it back", () => {
+    const el = container();
+    render(el, { id: "a", "data-unread": "", class: "x" });
+    const div = el.querySelector("#a")!;
+    render(el, { id: "a", "data-unread": null, class: null });
+    expect(el.querySelector("#a")).toBe(div);
+    expect(div.hasAttribute("data-unread")).toBe(false);
+    expect(div.hasAttribute("class")).toBe(false);
+    render(el, { id: "a", "data-unread": "" });
+    expect(div.getAttribute("data-unread")).toBe("");
+  });
+
+  it("removes a namespaced SVG attribute set to null", () => {
+    const el = container();
+    const xlink = "http://www.w3.org/1999/xlink";
+    updateDomWithVdom(el, { type: "svg", attributes: {}, children: [{ type: "use", attributes: { xlinkHref: "#i" }, children: [] }] } as VNode, globals);
+    const use = el.querySelector("use")!;
+    expect(use.getAttributeNS(xlink, "href")).toBe("#i");
+    updateDomWithVdom(el, { type: "svg", attributes: {}, children: [{ type: "use", attributes: { xlinkHref: null }, children: [] }] } as VNode, globals);
+    expect(el.querySelector("use")).toBe(use);
+    expect(use.hasAttributeNS(xlink, "href")).toBe(false);
+  });
+
+  it("removes an event handler whose next render is null", () => {
+    const el = container();
+    const onClick = recorder();
+    render(el, { id: "b", onClick }, "button");
+    const button = el.querySelector("#b") as HTMLElement;
+    render(el, { id: "b", onClick: null }, "button");
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(onClick.calls).toHaveLength(0);
+    expect(button.hasAttribute("onclick")).toBe(false);
+  });
+
+  it("treats undefined as left out: a full morph removes it, diff mode keeps it", () => {
+    const el = container();
+    render(el, { id: "a", title: "t", "data-x": "1" });
+    const div = el.querySelector("#a")!;
+    render(el, { id: "a", title: undefined, "data-x": "1" });
+    expect(div.hasAttribute("title")).toBe(false);
+    morph(el, [{ type: "div", attributes: { id: "a", "data-x": undefined, title: "u" }, children: [] } as VNode], { diff: true });
+    expect(div.getAttribute("data-x")).toBe("1");
+    expect(div.getAttribute("title")).toBe("u");
+  });
+
+  it("keeps typed input for value={undefined}, as for a left-out value", () => {
+    const el = container();
+    render(el, { id: "i", value: undefined }, "input");
+    const input = el.querySelector("#i") as HTMLInputElement;
+    input.value = "typed";
+    render(el, { id: "i", value: undefined }, "input");
+    expect(input.value).toBe("typed");
+  });
+
+  it("accepts a null ref", () => {
+    const el = container();
+    expect(() => render(el, { id: "r", ref: null })).not.toThrow();
+  });
+});
