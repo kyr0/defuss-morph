@@ -6,8 +6,6 @@ Agents append `<UTC ISO> s=<session> LESSON <VAE-DIALECT>` only for a falsified 
 Session start injects the 3 newest open entries: LESSON, FINDING learn=none, FAIL without a later DONE.
 Wrap: EVERY lead becomes a test | .vae/VERIFY.py rule | one MEMORY line with BC, then delete; OR delete BC evidence. -->
 
-2026-10-31T17:16:27Z s=7952b03c FINDING src/index.ts:morph learn=test: transitions.test.ts detached root returns a Promise
-2026-10-31T17:16:27Z s=7952b03c FINDING src/renderer.ts:createElement catch learn=verifier: .vae/VERIFY.py rule src.no-console
 2026-10-31T17:16:27Z s=7952b03c FINDING src/*.test.ts vi.fn/vi.spyOn learn=verifier: existing tests.no-mocks rule now passes
 2026-10-31T17:16:27Z s=7952b03c FINDING Makefile:e2e learn=verifier: gate tests.e2e.evidence + scripts/e2e/*
 2026-10-31T17:16:27Z s=7952b03c FINDING tsconfig.json learn=none: one-time extraction defect; typecheck in make lint catches recurrence
@@ -106,3 +104,5 @@ Wrap: EVERY lead becomes a test | .vae/VERIFY.py rule | one MEMORY line with BC,
 2026-11-25T06:46:29Z s=dcdb118f FINDING src/morph.ts:nextEventKeys learn=test: VERIFIED: 'removes an event handler whose next render is null' saw 1 call before, 0 after.
 2026-11-25T06:46:29Z s=dcdb118f FINDING src/morph.ts:declares learn=test: VERIFIED: tests for full vs diff mode and for an input's typed value; all 1953 tests pass in happy-dom, Chromium and Firefox.
 2026-11-25T06:46:29Z s=dcdb118f FINDING package.json + manifests + docs/index.html + SKILL.md learn=test: VERIFIED: scripts/lib/version.test.ts and the skill test pass; make build's check-dist reports fresh artifacts.
+2026-11-26T06:18:53Z s=dcdb118f DONE fp=2932a091a1d4 cov=97.8% paths=.claude-plugin/plugin.json,.codex-plugin/plugin.json,CHANGELOG.md,README.md(+11)
+2026-11-26T06:18:53Z s=dcdb118f FINDING package.json:devDependencies.vite learn=verifier: VERIFIED: rule deps.vite-direct in .vae/VERIFY.py; clean-clone probe before (no node_modules/vite) and after (vite 8.3.5, tests pass).

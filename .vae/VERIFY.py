@@ -62,4 +62,12 @@ RULES = [{
                r"jest\.(?:mock|fn|spyOn)\(|vi\.(?:mock|fn|spyOn)\(|sinon\.|gomock\.|mock\.Mock\b|Mockito\.|@Mock\s|mockk\(|"
                r"@Mock(?:ito)?Bean\b|new\s+Mock<|Mock\.Of<|Substitute\.For<|A\.Fake<|mockall:{2}|#\[automock\]",
     "claim": "tests exercise real subsystems, not mock frameworks",
+}, {
+    # VERIFIED: without it, a clean `bun install --frozen-lockfile` left vite out and vitest could not start in CI
+    # (runs 41371127537 and 45633445428); an older local node_modules still held vite, so the local gate passed.
+    "id": "deps.vite-direct",
+    "kind": "contains",
+    "path": "package.json",
+    "text": "\"vite\": ",
+    "claim": "vite, the peer vitest needs to start, is a direct devDependency",
 }]
